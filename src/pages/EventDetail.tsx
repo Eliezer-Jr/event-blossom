@@ -1,0 +1,271 @@
+import { useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { mockEvents } from '@/data/mockData';
+import Navbar from '@/components/Navbar';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { CalendarDays, MapPin, Users, Clock, ArrowLeft, Ticket, CheckCircle2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import TicketCard from '@/components/TicketCard';
+import { Registration } from '@/types/event';
+import { toast } from 'sonner';
+
+const EventDetail = () => {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const event = mockEvents.find((e) => e.id === id);
+  const [showForm, setShowForm] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [ticketData, setTicketData] = useState<Registration | null>(null);
+  const [selectedTicket, setSelectedTicket] = useState('');
+  const [formData, setFormData] = useState({ name: '', email: '', phone: '' });
+
+  if (!event) {
+    return (
+      <div className="min-h-screen">
+        <Navbar />
+        <div className="container py-20 text-center">
+          <h1 className="font-heading text-2xl font-bold">Event not found</h1>
+          <Button variant="ghost" className="mt-4" onClick={() => navigate('/')}>
+            <ArrowLeft className="mr-2 h-4 w-4" /> Back to events
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  const spotsLeft = event.capacity - event.registeredCount;
+  const selectedTicketType = event.ticketTypes.find((t) => t.id === selectedTicket);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedTicketType) return;
+
+    const registration: Registration = {
+      id: `r-${Date.now()}`,
+      eventId: event.id,
+      eventTitle: event.title,
+      name: formData.name,
+      email: formData.email,
+      phone: formData.phone,
+      ticketType: selectedTicketType.name,
+      ticketId: `${event.title.split(' ').map(w => w[0]).join('')}-${selectedTicketType.name.substring(0, 3).toUpperCase()}-${String(Math.floor(Math.random() * 999)).padStart(3, '0')}`,
+      status: selectedTicketType.price === 0 ? 'confirmed' : 'pending',
+      paymentStatus: selectedTicketType.price === 0 ? 'free' : 'pending',
+      amount: selectedTicketType.price,
+      registeredAt: new Date().toISOString(),
+    };
+
+    setTicketData(registration);
+    setSubmitted(true);
+    toast.success('Registration successful!');
+  };
+
+  return (
+    <div className="min-h-screen bg-background">
+      <Navbar />
+
+      <div className="relative h-64 bg-gradient-to-br from-primary/20 via-accent/10 to-background flex items-end">
+        <div className="container pb-6">
+          <Button variant="ghost" size="sm" className="mb-4" onClick={() => navigate('/')}>
+            <ArrowLeft className="mr-2 h-4 w-4" /> All Events
+          </Button>
+          <Badge className="mb-2 bg-primary/10 text-primary border-0">{event.category}</Badge>
+          <h1 className="font-heading text-3xl md:text-4xl font-bold">{event.title}</h1>
+          <p className="text-muted-foreground mt-1">{event.organizer}</p>
+        </div>
+      </div>
+
+      <div className="container py-8 grid gap-8 lg:grid-cols-3">
+        <div className="lg:col-span-2 space-y-6">
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+            <Card>
+              <CardContent className="p-6">
+                <h2 className="font-heading text-xl font-bold mb-3">About This Event</h2>
+                <p className="text-muted-foreground leading-relaxed">{event.description}</p>
+
+                <div className="mt-6 grid gap-4 sm:grid-cols-2">
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-secondary">
+                    <CalendarDays className="h-5 w-5 text-primary" />
+                    <div>
+                      <p className="text-sm font-medium">Date</p>
+                      <p className="text-sm text-muted-foreground">
+                        {new Date(event.date).toLocaleDateString('en-NG', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-secondary">
+                    <Clock className="h-5 w-5 text-primary" />
+                    <div>
+                      <p className="text-sm font-medium">Time</p>
+                      <p className="text-sm text-muted-foreground">{event.time}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-secondary">
+                    <MapPin className="h-5 w-5 text-primary" />
+                    <div>
+                      <p className="text-sm font-medium">Venue</p>
+                      <p className="text-sm text-muted-foreground">{event.venue}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-secondary">
+                    <Users className="h-5 w-5 text-primary" />
+                    <div>
+                      <p className="text-sm font-medium">Capacity</p>
+                      <p className="text-sm text-muted-foreground">{spotsLeft} of {event.capacity} spots left</p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="font-heading">Tickets</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {event.ticketTypes.map((ticket) => {
+                const available = ticket.quantity - ticket.sold;
+                return (
+                  <div
+                    key={ticket.id}
+                    className={`flex items-center justify-between p-4 rounded-lg border transition-colors ${
+                      selectedTicket === ticket.id ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'
+                    } ${available === 0 ? 'opacity-50' : 'cursor-pointer'}`}
+                    onClick={() => available > 0 && setSelectedTicket(ticket.id)}
+                  >
+                    <div>
+                      <p className="font-medium">{ticket.name}</p>
+                      {ticket.description && <p className="text-sm text-muted-foreground">{ticket.description}</p>}
+                      <p className="text-xs text-muted-foreground mt-1">{available} available</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-heading text-lg font-bold text-primary">
+                        {ticket.price === 0 ? 'Free' : `₦${ticket.price.toLocaleString()}`}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="space-y-6">
+          <AnimatePresence mode="wait">
+            {submitted && ticketData ? (
+              <motion.div
+                key="ticket"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="space-y-4"
+              >
+                <div className="flex items-center gap-2 text-success">
+                  <CheckCircle2 className="h-5 w-5" />
+                  <span className="font-heading font-bold">Registration Complete!</span>
+                </div>
+                <TicketCard registration={ticketData} />
+              </motion.div>
+            ) : (
+              <motion.div key="form">
+                {!showForm ? (
+                  <Card>
+                    <CardContent className="p-6 text-center space-y-4">
+                      <Ticket className="h-10 w-10 text-primary mx-auto" />
+                      <h3 className="font-heading text-xl font-bold">Ready to attend?</h3>
+                      <p className="text-sm text-muted-foreground">
+                        {spotsLeft > 0
+                          ? `Secure your spot — ${spotsLeft} remaining`
+                          : 'This event is fully booked'}
+                      </p>
+                      <Button
+                        className="w-full"
+                        size="lg"
+                        disabled={spotsLeft === 0}
+                        onClick={() => setShowForm(true)}
+                      >
+                        {spotsLeft > 0 ? 'Register Now' : 'Sold Out'}
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="font-heading">Register</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <form onSubmit={handleSubmit} className="space-y-4">
+                        <div>
+                          <Label htmlFor="name">Full Name</Label>
+                          <Input
+                            id="name"
+                            required
+                            maxLength={100}
+                            value={formData.name}
+                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="email">Email</Label>
+                          <Input
+                            id="email"
+                            type="email"
+                            required
+                            maxLength={255}
+                            value={formData.email}
+                            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="phone">Phone</Label>
+                          <Input
+                            id="phone"
+                            required
+                            maxLength={20}
+                            value={formData.phone}
+                            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                          />
+                        </div>
+                        <div>
+                          <Label>Ticket Type</Label>
+                          <Select value={selectedTicket} onValueChange={setSelectedTicket}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select ticket" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {event.ticketTypes.filter((t) => t.quantity - t.sold > 0).map((t) => (
+                                <SelectItem key={t.id} value={t.id}>
+                                  {t.name} — {t.price === 0 ? 'Free' : `₦${t.price.toLocaleString()}`}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        {selectedTicketType && selectedTicketType.price > 0 && (
+                          <div className="rounded-lg bg-secondary p-3 text-sm">
+                            <p className="font-medium">Amount: <span className="text-primary font-bold">₦{selectedTicketType.price.toLocaleString()}</span></p>
+                            <p className="text-muted-foreground text-xs mt-1">Payment will be processed on next step</p>
+                          </div>
+                        )}
+                        <Button type="submit" className="w-full" disabled={!selectedTicket}>
+                          Complete Registration
+                        </Button>
+                      </form>
+                    </CardContent>
+                  </Card>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default EventDetail;

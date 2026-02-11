@@ -1,0 +1,237 @@
+import { useState } from 'react';
+import Navbar from '@/components/Navbar';
+import { mockRegistrations, mockEvents } from '@/data/mockData';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Search, Users, DollarSign, Ticket, TrendingUp, Download, QrCode } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { QRCodeSVG } from 'qrcode.react';
+
+const statusBadge: Record<string, string> = {
+  confirmed: 'bg-success/10 text-success border-success/20',
+  pending: 'bg-warning/10 text-warning border-warning/20',
+  cancelled: 'bg-destructive/10 text-destructive border-destructive/20',
+  'checked-in': 'bg-primary/10 text-primary border-primary/20',
+};
+
+const paymentBadge: Record<string, string> = {
+  paid: 'bg-success/10 text-success border-success/20',
+  pending: 'bg-warning/10 text-warning border-warning/20',
+  refunded: 'bg-muted text-muted-foreground',
+  free: 'bg-secondary text-secondary-foreground',
+};
+
+const AdminDashboard = () => {
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [paymentFilter, setPaymentFilter] = useState('all');
+  const [selectedReg, setSelectedReg] = useState<typeof mockRegistrations[0] | null>(null);
+
+  const filtered = mockRegistrations.filter((r) => {
+    const matchesSearch =
+      r.name.toLowerCase().includes(search.toLowerCase()) ||
+      r.email.toLowerCase().includes(search.toLowerCase()) ||
+      r.ticketId.toLowerCase().includes(search.toLowerCase());
+    const matchesStatus = statusFilter === 'all' || r.status === statusFilter;
+    const matchesPayment = paymentFilter === 'all' || r.paymentStatus === paymentFilter;
+    return matchesSearch && matchesStatus && matchesPayment;
+  });
+
+  const totalRevenue = mockRegistrations.filter((r) => r.paymentStatus === 'paid').reduce((s, r) => s + r.amount, 0);
+  const totalRegistrations = mockRegistrations.length;
+  const checkedIn = mockRegistrations.filter((r) => r.status === 'checked-in').length;
+  const pendingPayments = mockRegistrations.filter((r) => r.paymentStatus === 'pending').length;
+
+  const stats = [
+    { label: 'Total Registrations', value: totalRegistrations, icon: Users, color: 'text-primary' },
+    { label: 'Revenue', value: `₦${totalRevenue.toLocaleString()}`, icon: DollarSign, color: 'text-success' },
+    { label: 'Checked In', value: checkedIn, icon: Ticket, color: 'text-accent' },
+    { label: 'Pending Payments', value: pendingPayments, icon: TrendingUp, color: 'text-warning' },
+  ];
+
+  const handleExport = () => {
+    const headers = ['Name', 'Email', 'Phone', 'Event', 'Ticket Type', 'Ticket ID', 'Status', 'Payment', 'Amount'];
+    const rows = filtered.map((r) => [r.name, r.email, r.phone, r.eventTitle, r.ticketType, r.ticketId, r.status, r.paymentStatus, r.amount]);
+    const csv = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'registrations.csv';
+    a.click();
+  };
+
+  return (
+    <div className="min-h-screen bg-background">
+      <Navbar />
+      <div className="container py-8 space-y-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="font-heading text-3xl font-bold">Dashboard</h1>
+            <p className="text-muted-foreground">Manage registrations across all events</p>
+          </div>
+          <Button onClick={handleExport} variant="outline" className="gap-2">
+            <Download className="h-4 w-4" /> Export CSV
+          </Button>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {stats.map((stat, i) => (
+            <motion.div
+              key={stat.label}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.1 }}
+            >
+              <Card>
+                <CardContent className="p-5 flex items-center gap-4">
+                  <div className={`p-3 rounded-xl bg-secondary ${stat.color}`}>
+                    <stat.icon className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">{stat.label}</p>
+                    <p className="font-heading text-2xl font-bold">{stat.value}</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          ))}
+        </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="font-heading">Registrations</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col sm:flex-row gap-3 mb-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search name, email, ticket ID..."
+                  className="pl-9"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+              </div>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-full sm:w-[160px]">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="confirmed">Confirmed</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="checked-in">Checked In</SelectItem>
+                  <SelectItem value="cancelled">Cancelled</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={paymentFilter} onValueChange={setPaymentFilter}>
+                <SelectTrigger className="w-full sm:w-[160px]">
+                  <SelectValue placeholder="Payment" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Payments</SelectItem>
+                  <SelectItem value="paid">Paid</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="free">Free</SelectItem>
+                  <SelectItem value="refunded">Refunded</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="rounded-lg border overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead className="hidden md:table-cell">Event</TableHead>
+                    <TableHead>Ticket</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="hidden sm:table-cell">Payment</TableHead>
+                    <TableHead className="text-right">Amount</TableHead>
+                    <TableHead></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filtered.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                        No registrations found
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filtered.map((reg) => (
+                      <TableRow key={reg.id} className="cursor-pointer hover:bg-muted/50" onClick={() => setSelectedReg(reg)}>
+                        <TableCell>
+                          <div>
+                            <p className="font-medium">{reg.name}</p>
+                            <p className="text-xs text-muted-foreground">{reg.email}</p>
+                          </div>
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell text-sm text-muted-foreground">{reg.eventTitle}</TableCell>
+                        <TableCell>
+                          <span className="text-sm">{reg.ticketType}</span>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className={statusBadge[reg.status]}>{reg.status}</Badge>
+                        </TableCell>
+                        <TableCell className="hidden sm:table-cell">
+                          <Badge variant="outline" className={paymentBadge[reg.paymentStatus]}>{reg.paymentStatus}</Badge>
+                        </TableCell>
+                        <TableCell className="text-right font-medium">
+                          {reg.amount === 0 ? '—' : `₦${reg.amount.toLocaleString()}`}
+                        </TableCell>
+                        <TableCell>
+                          <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); setSelectedReg(reg); }}>
+                            <QrCode className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Dialog open={!!selectedReg} onOpenChange={() => setSelectedReg(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="font-heading">Registration Details</DialogTitle>
+          </DialogHeader>
+          {selectedReg && (
+            <div className="space-y-4">
+              <div className="flex justify-center">
+                <div className="p-4 bg-card rounded-xl border">
+                  <QRCodeSVG value={selectedReg.ticketId} size={140} />
+                </div>
+              </div>
+              <p className="text-center font-heading font-bold text-lg">{selectedReg.ticketId}</p>
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div><span className="text-muted-foreground">Name</span><p className="font-medium">{selectedReg.name}</p></div>
+                <div><span className="text-muted-foreground">Email</span><p className="font-medium">{selectedReg.email}</p></div>
+                <div><span className="text-muted-foreground">Phone</span><p className="font-medium">{selectedReg.phone}</p></div>
+                <div><span className="text-muted-foreground">Ticket</span><p className="font-medium">{selectedReg.ticketType}</p></div>
+                <div><span className="text-muted-foreground">Event</span><p className="font-medium">{selectedReg.eventTitle}</p></div>
+                <div><span className="text-muted-foreground">Amount</span><p className="font-medium">{selectedReg.amount === 0 ? 'Free' : `₦${selectedReg.amount.toLocaleString()}`}</p></div>
+              </div>
+              <div className="flex gap-2">
+                <Badge variant="outline" className={statusBadge[selectedReg.status]}>{selectedReg.status}</Badge>
+                <Badge variant="outline" className={paymentBadge[selectedReg.paymentStatus]}>{selectedReg.paymentStatus}</Badge>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
+
+export default AdminDashboard;
