@@ -1,0 +1,81 @@
+import { Link, useLocation } from 'react-router-dom';
+import { Calendar, LayoutDashboard, Menu, X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+
+const Navbar = () => {
+  const location = useLocation();
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  const links = [
+    { to: '/', label: 'Events', icon: Calendar },
+    { to: '/admin', label: 'Dashboard', icon: LayoutDashboard },
+  ];
+
+  const isActive = (path: string) => location.pathname === path;
+
+  return (
+    <nav className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-xl">
+      <div className="container flex h-16 items-center justify-between">
+        <Link to="/" className="flex items-center gap-2">
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
+            <Calendar className="h-5 w-5 text-primary-foreground" />
+          </div>
+          <span className="font-heading text-xl font-bold">EventFlow</span>
+        </Link>
+
+        <div className="hidden items-center gap-1 md:flex">
+          {links.map((link) => (
+            <Link key={link.to} to={link.to}>
+              <Button
+                variant={isActive(link.to) ? 'default' : 'ghost'}
+                size="sm"
+                className="gap-2"
+              >
+                <link.icon className="h-4 w-4" />
+                {link.label}
+              </Button>
+            </Link>
+          ))}
+        </div>
+
+        <Button
+          variant="ghost"
+          size="icon"
+          className="md:hidden"
+          onClick={() => setMobileOpen(!mobileOpen)}
+        >
+          {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+        </Button>
+      </div>
+
+      <AnimatePresence>
+        {mobileOpen && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="overflow-hidden border-t border-border md:hidden"
+          >
+            <div className="container flex flex-col gap-2 py-4">
+              {links.map((link) => (
+                <Link key={link.to} to={link.to} onClick={() => setMobileOpen(false)}>
+                  <Button
+                    variant={isActive(link.to) ? 'default' : 'ghost'}
+                    className="w-full justify-start gap-2"
+                  >
+                    <link.icon className="h-4 w-4" />
+                    {link.label}
+                  </Button>
+                </Link>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </nav>
+  );
+};
+
+export default Navbar;
