@@ -8,13 +8,16 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Search, Users, DollarSign, Ticket, TrendingUp, Download, QrCode, Loader2, PlusCircle, UserCheck, Calendar } from 'lucide-react';
+import { Search, Users, DollarSign, Ticket, TrendingUp, Download, QrCode, Loader2, PlusCircle, UserCheck, Calendar, Send } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { QRCodeSVG } from 'qrcode.react';
 import CreateEventForm from '@/components/admin/CreateEventForm';
 import CheckInScanner from '@/components/admin/CheckInScanner';
 import EventManager from '@/components/admin/EventManager';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { useEvents } from '@/hooks/useEvents';
 
 const statusBadge: Record<string, string> = {
   confirmed: 'bg-success/10 text-success border-success/20',
@@ -36,7 +39,10 @@ const AdminDashboard = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [paymentFilter, setPaymentFilter] = useState('all');
   const [selectedReg, setSelectedReg] = useState<DbRegistration | null>(null);
+  const [isSendingSms, setIsSendingSms] = useState(false);
+  const [selectedEventForSms, setSelectedEventForSms] = useState('');
   const { data: registrations = [], isLoading } = useRegistrations();
+  const { data: events = [] } = useEvents();
 
   const filtered = registrations.filter((r) => {
     const eventTitle = (r.events as any)?.title || '';
@@ -77,6 +83,22 @@ const AdminDashboard = () => {
     a.click();
   };
 
+  const handleSendPendingSms = async () => {
+    if (!selectedEventForSms || isSendingSms) return;
+    setIsSendingSms(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('send-pending-sms', {
+        body: { event_id: selectedEventForSms },
+      });
+      if (error) throw error;
+      toast.success(data?.message || `SMS sent to ${data?.sent || 0} pending registrant(s)`);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to send SMS');
+    } finally {
+      setIsSendingSms(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -97,7 +119,29 @@ const AdminDashboard = () => {
           </TabsList>
 
           <TabsContent value="registrations" className="space-y-6">
-            <div className="flex justify-end">
+            <div className="flex flex-col sm:flex-row gap-3 justify-end">
+              <div className="flex gap-2 items-center">
+                <Select value={selectedEventForSms} onValueChange={setSelectedEventForSms}>
+                  <SelectTrigger className="w-[200px]">
+                    <SelectValue placeholder="Select event" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {events.map((ev) => (
+                      <SelectItem key={ev.id} value={ev.id}>{ev.title}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  onClick={handleSendPendingSms}
+                  variant="outline"
+                  size="sm"
+                  className="gap-2"
+                  disabled={!selectedEventForSms || isSendingSms}
+                >
+                  {isSendingSms ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                  SMS Pending
+                </Button>
+              </div>
               <Button onClick={handleExport} variant="outline" size="sm" className="gap-2">
                 <Download className="h-4 w-4" /> Export CSV
               </Button>
