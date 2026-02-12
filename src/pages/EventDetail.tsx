@@ -111,7 +111,7 @@ const EventDetail = () => {
           body: {
             phone: normalizedPhone,
             amount: selectedTicketType.price,
-            currency: 'NGN',
+            currency: 'GHS',
             description: `${event.title} - ${selectedTicketType.name} ticket`,
             registration_id: regData.id,
             event_id: event.id,
