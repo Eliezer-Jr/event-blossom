@@ -1,1 +1,7 @@
 project_id = "pqfrgqadexairkmctbtj"
+
+[functions.moolre-payment]
+verify_jwt = false
+
+[functions.moolre-sms]
+verify_jwt = false
