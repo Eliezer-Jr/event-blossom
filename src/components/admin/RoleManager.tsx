@@ -2,9 +2,12 @@ import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, ShieldCheck, Plus, X } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Loader2, ShieldCheck, Plus, X, UserPlus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -29,6 +32,11 @@ const RoleManager = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [assigningRole, setAssigningRole] = useState<Record<string, string>>({});
   const [busyUsers, setBusyUsers] = useState<Set<string>>(new Set());
+  const [showAddUser, setShowAddUser] = useState(false);
+  const [newPhone, setNewPhone] = useState('');
+  const [newName, setNewName] = useState('');
+  const [newRole, setNewRole] = useState('');
+  const [isCreating, setIsCreating] = useState(false);
 
   const fetchUsers = useCallback(async () => {
     setIsLoading(true);
@@ -111,6 +119,39 @@ const RoleManager = () => {
     }
   };
 
+  const handleCreateUser = async () => {
+    if (!newPhone.trim()) return;
+    setIsCreating(true);
+    try {
+      const session = (await supabase.auth.getSession()).data.session;
+      if (!session) throw new Error('Not authenticated');
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manage-roles?action=create-user`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session.access_token}`,
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+          body: JSON.stringify({ phone: newPhone.trim(), display_name: newName.trim() || undefined, role: newRole || undefined }),
+        }
+      );
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error);
+      toast.success('User created successfully');
+      setShowAddUser(false);
+      setNewPhone('');
+      setNewName('');
+      setNewRole('');
+      fetchUsers();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to create user');
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
   const getRoleConfig = (role: string) => ALL_ROLES.find((r) => r.value === role);
 
   if (isLoading) {
@@ -124,10 +165,13 @@ const RoleManager = () => {
   return (
     <div className="space-y-4">
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0">
           <CardTitle className="font-heading flex items-center gap-2">
             <ShieldCheck className="h-5 w-5 text-primary" /> User Roles
           </CardTitle>
+          <Button size="sm" onClick={() => setShowAddUser(true)} className="gap-2">
+            <UserPlus className="h-4 w-4" /> Add User
+          </Button>
         </CardHeader>
         <CardContent className="p-0">
           <div className="rounded-lg overflow-x-auto">
@@ -225,6 +269,55 @@ const RoleManager = () => {
           </div>
         </CardContent>
       </Card>
+
+      <Dialog open={showAddUser} onOpenChange={setShowAddUser}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="font-heading">Add New User</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="phone">Phone Number *</Label>
+              <Input
+                id="phone"
+                placeholder="0557083554"
+                value={newPhone}
+                onChange={(e) => setNewPhone(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">Ghana numbers starting with 0 are auto-prefixed with +233</p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="name">Display Name</Label>
+              <Input
+                id="name"
+                placeholder="John Doe"
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Initial Role (optional)</Label>
+              <Select value={newRole} onValueChange={setNewRole}>
+                <SelectTrigger>
+                  <SelectValue placeholder="No role" />
+                </SelectTrigger>
+                <SelectContent>
+                  {ALL_ROLES.map((r) => (
+                    <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAddUser(false)}>Cancel</Button>
+            <Button onClick={handleCreateUser} disabled={!newPhone.trim() || isCreating}>
+              {isCreating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <UserPlus className="h-4 w-4 mr-2" />}
+              Create User
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

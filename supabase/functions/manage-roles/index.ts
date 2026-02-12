@@ -80,6 +80,55 @@ Deno.serve(async (req) => {
       });
     }
 
+    if (req.method === "POST" && action === "create-user") {
+      const { phone, display_name, role } = await req.json();
+      if (!phone) {
+        return new Response(JSON.stringify({ error: "phone is required" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Format phone: if starts with 0, assume Ghana (+233)
+      let formattedPhone = phone.trim();
+      if (formattedPhone.startsWith("0")) {
+        formattedPhone = "+233" + formattedPhone.slice(1);
+      }
+      if (!formattedPhone.startsWith("+")) {
+        formattedPhone = "+" + formattedPhone;
+      }
+
+      // Check if user already exists
+      const { data: existingUsers } = await serviceClient.auth.admin.listUsers({ perPage: 1000 });
+      const existing = existingUsers?.users?.find((u: any) => u.phone === formattedPhone);
+      if (existing) {
+        return new Response(JSON.stringify({ error: "User with this phone already exists", user_id: existing.id }), {
+          status: 409,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const { data: newUser, error: createErr } = await serviceClient.auth.admin.createUser({
+        phone: formattedPhone,
+        phone_confirm: true,
+        user_metadata: { display_name: display_name || formattedPhone },
+      });
+
+      if (createErr) throw createErr;
+
+      // Assign role if provided
+      if (role && newUser?.user) {
+        await serviceClient
+          .from("user_roles")
+          .upsert({ user_id: newUser.user.id, role }, { onConflict: "user_id,role" });
+      }
+
+      return new Response(JSON.stringify({ success: true, user: { id: newUser.user?.id, phone: formattedPhone } }), {
+        status: 201,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     if (req.method === "POST" && action === "assign") {
       const { user_id, role } = await req.json();
       if (!user_id || !role) {
