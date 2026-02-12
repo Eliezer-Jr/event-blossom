@@ -60,7 +60,7 @@ const EventCard = ({ event, index }: EventCardProps) => {
 
             <div className="mt-4 flex items-center justify-between">
               <span className="font-heading text-lg font-bold text-primary">
-                {lowestPrice === 0 ? 'Free' : `₦${lowestPrice.toLocaleString()}`}
+                {lowestPrice === 0 ? 'Free' : `GH₵${lowestPrice.toLocaleString()}`}
               </span>
               <div className="flex items-center gap-2">
                 <div className="h-2 w-20 rounded-full bg-muted overflow-hidden">

@@ -57,7 +57,7 @@ const AdminDashboard = () => {
 
   const stats = [
     { label: 'Total Registrations', value: totalRegistrations, icon: Users, color: 'text-primary' },
-    { label: 'Revenue', value: `₦${totalRevenue.toLocaleString()}`, icon: DollarSign, color: 'text-success' },
+    { label: 'Revenue', value: `GH₵${totalRevenue.toLocaleString()}`, icon: DollarSign, color: 'text-success' },
     { label: 'Checked In', value: checkedIn, icon: Ticket, color: 'text-accent' },
     { label: 'Pending Payments', value: pendingPayments, icon: TrendingUp, color: 'text-warning' },
   ];
@@ -213,7 +213,7 @@ const AdminDashboard = () => {
                             <Badge variant="outline" className={paymentBadge[reg.payment_status] || ''}>{reg.payment_status}</Badge>
                           </TableCell>
                           <TableCell className="text-right font-medium">
-                            {reg.amount === 0 ? '—' : `₦${reg.amount.toLocaleString()}`}
+                            {reg.amount === 0 ? '—' : `GH₵${reg.amount.toLocaleString()}`}
                           </TableCell>
                           <TableCell>
                             <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); setSelectedReg(reg); }}>
@@ -264,7 +264,7 @@ const AdminDashboard = () => {
                 <div><span className="text-muted-foreground">Phone</span><p className="font-medium">{selectedReg.phone || '—'}</p></div>
                 <div><span className="text-muted-foreground">Ticket</span><p className="font-medium">{(selectedReg.ticket_types as any)?.name || '—'}</p></div>
                 <div><span className="text-muted-foreground">Event</span><p className="font-medium">{(selectedReg.events as any)?.title || '—'}</p></div>
-                <div><span className="text-muted-foreground">Amount</span><p className="font-medium">{selectedReg.amount === 0 ? 'Free' : `₦${selectedReg.amount.toLocaleString()}`}</p></div>
+                <div><span className="text-muted-foreground">Amount</span><p className="font-medium">{selectedReg.amount === 0 ? 'Free' : `GH₵${selectedReg.amount.toLocaleString()}`}</p></div>
               </div>
               <div className="flex gap-2">
                 <Badge variant="outline" className={statusBadge[selectedReg.status] || ''}>{selectedReg.status}</Badge>

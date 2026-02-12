@@ -36,7 +36,7 @@ const TicketCard = ({ registration }: TicketCardProps) => {
             <span>{new Date(registration.registeredAt).toLocaleDateString()}</span>
           </div>
           {registration.amount > 0 && (
-            <p className="text-sm font-semibold text-primary">₦{registration.amount.toLocaleString()}</p>
+            <p className="text-sm font-semibold text-primary">GH₵{registration.amount.toLocaleString()}</p>
           )}
         </div>
         <div className="p-2 bg-card rounded-lg border border-border">
