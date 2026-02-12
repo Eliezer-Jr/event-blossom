@@ -46,7 +46,7 @@ Deno.serve(async (req) => {
         currency: currency || "GHS",
         payer: phone,
         amount,
-        accountnumber: MOOLRE_API_USER,
+        accountnumber: "10595606038423",
         externalref: registration_id,
         reference: description || "Event ticket payment",
       }),
