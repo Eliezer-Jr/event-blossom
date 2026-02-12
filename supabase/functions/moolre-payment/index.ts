@@ -22,7 +22,7 @@ Deno.serve(async (req) => {
       throw new Error("Moolre API credentials not configured");
     }
 
-    const { phone, amount, currency = "NGN", description, registration_id, event_id, ticket_type_id } = await req.json();
+    const { phone, amount, currency = "GHS", description, registration_id, event_id, ticket_type_id } = await req.json();
 
     if (!phone || !amount || !registration_id || !event_id || !ticket_type_id) {
       return new Response(
@@ -46,6 +46,7 @@ Deno.serve(async (req) => {
         currency: currency || "GHS",
         payer: phone,
         amount,
+        accountnumber: phone,
         externalref: registration_id,
         reference: description || "Event ticket payment",
       }),
