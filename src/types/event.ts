@@ -1,3 +1,5 @@
+import { CustomField } from './customField';
+
 export interface Event {
   id: string;
   title: string;
@@ -12,6 +14,7 @@ export interface Event {
   ticketTypes: TicketType[];
   organizer: string;
   category: string;
+  customFields?: CustomField[];
 }
 
 export interface TicketType {

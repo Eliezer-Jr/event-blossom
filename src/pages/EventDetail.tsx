@@ -7,6 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { CalendarDays, MapPin, Users, Clock, ArrowLeft, Ticket, CheckCircle2, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -25,6 +27,7 @@ const EventDetail = () => {
   const [ticketData, setTicketData] = useState<Registration | null>(null);
   const [selectedTicket, setSelectedTicket] = useState('');
   const [formData, setFormData] = useState({ name: '', email: '', phone: '' });
+  const [customValues, setCustomValues] = useState<Record<string, string | boolean>>({});
 
   if (isLoading) {
     return (
@@ -77,6 +80,7 @@ const EventDetail = () => {
           amount: selectedTicketType.price,
           status: isPaid ? 'pending' : 'confirmed',
           payment_status: isPaid ? 'pending' : 'free',
+          custom_field_values: customValues as any,
         })
         .select()
         .single();
@@ -318,6 +322,53 @@ const EventDetail = () => {
                             </SelectContent>
                           </Select>
                         </div>
+                        {/* Custom Fields */}
+                        {event.customFields && event.customFields.length > 0 && event.customFields.map((field) => (
+                          <div key={field.id}>
+                            <Label htmlFor={`cf-${field.id}`}>{field.label}{field.required && ' *'}</Label>
+                            {field.type === 'textarea' ? (
+                              <Textarea
+                                id={`cf-${field.id}`}
+                                required={field.required}
+                                placeholder={field.placeholder}
+                                value={(customValues[field.id] as string) || ''}
+                                onChange={(e) => setCustomValues({ ...customValues, [field.id]: e.target.value })}
+                              />
+                            ) : field.type === 'select' ? (
+                              <Select
+                                value={(customValues[field.id] as string) || ''}
+                                onValueChange={(v) => setCustomValues({ ...customValues, [field.id]: v })}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder={field.placeholder || 'Select...'} />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {(field.options || []).filter(Boolean).map((opt) => (
+                                    <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            ) : field.type === 'checkbox' ? (
+                              <div className="flex items-center gap-2 mt-1">
+                                <Checkbox
+                                  id={`cf-${field.id}`}
+                                  checked={!!customValues[field.id]}
+                                  onCheckedChange={(v) => setCustomValues({ ...customValues, [field.id]: !!v })}
+                                />
+                                <Label htmlFor={`cf-${field.id}`} className="text-sm cursor-pointer">{field.placeholder || field.label}</Label>
+                              </div>
+                            ) : (
+                              <Input
+                                id={`cf-${field.id}`}
+                                type={field.type === 'email' ? 'email' : field.type === 'number' ? 'number' : field.type === 'phone' ? 'tel' : 'text'}
+                                required={field.required}
+                                placeholder={field.placeholder}
+                                value={(customValues[field.id] as string) || ''}
+                                onChange={(e) => setCustomValues({ ...customValues, [field.id]: e.target.value })}
+                              />
+                            )}
+                          </div>
+                        ))}
                         {selectedTicketType && selectedTicketType.price > 0 && (
                           <div className="rounded-lg bg-secondary p-3 text-sm">
                             <p className="font-medium">Amount: <span className="text-primary font-bold">₦{selectedTicketType.price.toLocaleString()}</span></p>
