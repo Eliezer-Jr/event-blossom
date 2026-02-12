@@ -9,6 +9,7 @@ import EventDetail from "./pages/EventDetail";
 import AdminDashboard from "./pages/AdminDashboard";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
+import AccessDenied from "./pages/AccessDenied";
 import { ReactNode } from "react";
 
 const queryClient = new QueryClient();
@@ -17,6 +18,13 @@ const ProtectedRoute = ({ children }: { children: ReactNode }) => {
   const { user, loading } = useAuth();
   if (loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   if (!user) return <Navigate to="/auth" replace />;
+  return <>{children}</>;
+};
+
+const RoleGuard = ({ children }: { children: ReactNode }) => {
+  const { roles, loading } = useAuth();
+  if (loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  if (roles.length === 0) return <AccessDenied />;
   return <>{children}</>;
 };
 
@@ -35,7 +43,9 @@ const App = () => (
               path="/admin"
               element={
                 <ProtectedRoute>
-                  <AdminDashboard />
+                  <RoleGuard>
+                    <AdminDashboard />
+                  </RoleGuard>
                 </ProtectedRoute>
               }
             />
