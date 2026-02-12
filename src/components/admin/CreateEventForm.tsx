@@ -5,13 +5,14 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Trash2, Loader2 } from 'lucide-react';
+import { Plus, Trash2, Loader2, FileText } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
 import { CustomField } from '@/types/customField';
 import CustomFieldBuilder from './CustomFieldBuilder';
+import { eventTemplates } from '@/data/eventTemplates';
 
 interface TicketTypeInput {
   name: string;
@@ -101,10 +102,32 @@ const CreateEventForm = () => {
     }
   };
 
+  const applyTemplate = (templateId: string) => {
+    const template = eventTemplates.find((t) => t.id === templateId);
+    if (!template) return;
+    setForm((f) => ({ ...f, ...template.form }));
+    setTickets(template.tickets);
+    setCustomFields(template.customFields);
+    toast.success(`"${template.label}" template applied!`);
+  };
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="font-heading">Create New Event</CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="font-heading">Create New Event</CardTitle>
+          <Select onValueChange={applyTemplate}>
+            <SelectTrigger className="w-auto gap-2">
+              <FileText className="h-4 w-4" />
+              <SelectValue placeholder="Use template" />
+            </SelectTrigger>
+            <SelectContent>
+              {eventTemplates.map((t) => (
+                <SelectItem key={t.id} value={t.id}>{t.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
