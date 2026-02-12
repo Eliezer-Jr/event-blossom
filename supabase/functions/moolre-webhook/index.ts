@@ -82,7 +82,7 @@ Deno.serve(async (req) => {
               "X-API-VASKEY": MOOLRE_VAS_KEY,
             },
             body: JSON.stringify({
-              sender_id: "BaptistConf",
+              senderid: "BaptistConf",
               recipients: [registration.phone],
               message: `Payment confirmed! Your registration for "${eventTitle}" is now confirmed. Ticket ID: ${registration.ticket_id}. See you there!`,
             }),
