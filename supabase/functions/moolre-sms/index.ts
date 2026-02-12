@@ -29,7 +29,7 @@ Deno.serve(async (req) => {
     // Ensure recipients is an array
     const recipientList = Array.isArray(recipients) ? recipients : [recipients];
 
-    const smsResponse = await fetch(`${MOOLRE_API_BASE}/api/v1/sms/send`, {
+    const smsResponse = await fetch(`${MOOLRE_API_BASE}/open/sms/send`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
