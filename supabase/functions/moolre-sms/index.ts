@@ -13,14 +13,11 @@ Deno.serve(async (req) => {
 
   try {
     const MOOLRE_VAS_KEY = Deno.env.get("MOOLRE_VAS_KEY");
-    const MOOLRE_API_USER = Deno.env.get("MOOLRE_API_USER");
-    const MOOLRE_API_KEY = Deno.env.get("MOOLRE_API_KEY");
-    const MOOLRE_API_PUBKEY = Deno.env.get("MOOLRE_API_PUBKEY");
     if (!MOOLRE_VAS_KEY) {
       throw new Error("MOOLRE_VAS_KEY is not configured");
     }
 
-    const { recipients, message, sender_id = "BaptistConf" } = await req.json();
+    const { recipients, message, sender_id = "BaptistConf", ref = "" } = await req.json();
 
     if (!recipients || !message) {
       return new Response(
@@ -29,21 +26,18 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Keep recipients in international format (233XXXXXXXXX) as array
+    // Build messages array per Moolre API format
     const rawList = Array.isArray(recipients) ? recipients : [recipients];
-    const recipientList = rawList.map((r: string) => {
-      // Convert local to international if needed
-      if (r.startsWith('0')) return '233' + r.substring(1);
-      if (r.startsWith('+233')) return r.substring(1);
-      return r;
-    });
+    const messages = rawList.map((r: string, i: number) => ({
+      recipient: r,
+      message,
+      ref: ref || `sms-${Date.now()}-${i}`,
+    }));
 
     const requestBody = {
-      type: 1,
+      type: "1",
       senderid: sender_id,
-      recipients: recipientList,
-      message,
-      accountnumber: "10595606038423",
+      messages,
     };
 
     console.log("Moolre SMS request body:", JSON.stringify(requestBody));
@@ -52,9 +46,6 @@ Deno.serve(async (req) => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "X-API-USER": MOOLRE_API_USER || "",
-        "X-API-KEY": MOOLRE_API_KEY || "",
-        "X-API-PUBKEY": MOOLRE_API_PUBKEY || "",
         "X-API-VASKEY": MOOLRE_VAS_KEY,
       },
       body: JSON.stringify(requestBody),
