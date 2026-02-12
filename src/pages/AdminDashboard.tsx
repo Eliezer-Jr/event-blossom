@@ -1,13 +1,15 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
-import { mockRegistrations, mockEvents } from '@/data/mockData';
+import { useRegistrations, DbRegistration } from '@/hooks/useRegistrations';
+import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Search, Users, DollarSign, Ticket, TrendingUp, Download, QrCode } from 'lucide-react';
+import { Search, Users, DollarSign, Ticket, TrendingUp, Download, QrCode, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { QRCodeSVG } from 'qrcode.react';
@@ -24,28 +26,32 @@ const paymentBadge: Record<string, string> = {
   pending: 'bg-warning/10 text-warning border-warning/20',
   refunded: 'bg-muted text-muted-foreground',
   free: 'bg-secondary text-secondary-foreground',
+  failed: 'bg-destructive/10 text-destructive border-destructive/20',
 };
 
 const AdminDashboard = () => {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [paymentFilter, setPaymentFilter] = useState('all');
-  const [selectedReg, setSelectedReg] = useState<typeof mockRegistrations[0] | null>(null);
+  const [selectedReg, setSelectedReg] = useState<DbRegistration | null>(null);
+  const { data: registrations = [], isLoading } = useRegistrations();
 
-  const filtered = mockRegistrations.filter((r) => {
+  const filtered = registrations.filter((r) => {
+    const eventTitle = (r.events as any)?.title || '';
+    const ticketName = (r.ticket_types as any)?.name || '';
     const matchesSearch =
       r.name.toLowerCase().includes(search.toLowerCase()) ||
       r.email.toLowerCase().includes(search.toLowerCase()) ||
-      r.ticketId.toLowerCase().includes(search.toLowerCase());
+      r.ticket_id.toLowerCase().includes(search.toLowerCase());
     const matchesStatus = statusFilter === 'all' || r.status === statusFilter;
-    const matchesPayment = paymentFilter === 'all' || r.paymentStatus === paymentFilter;
+    const matchesPayment = paymentFilter === 'all' || r.payment_status === paymentFilter;
     return matchesSearch && matchesStatus && matchesPayment;
   });
 
-  const totalRevenue = mockRegistrations.filter((r) => r.paymentStatus === 'paid').reduce((s, r) => s + r.amount, 0);
-  const totalRegistrations = mockRegistrations.length;
-  const checkedIn = mockRegistrations.filter((r) => r.status === 'checked-in').length;
-  const pendingPayments = mockRegistrations.filter((r) => r.paymentStatus === 'pending').length;
+  const totalRevenue = registrations.filter((r) => r.payment_status === 'paid').reduce((s, r) => s + r.amount, 0);
+  const totalRegistrations = registrations.length;
+  const checkedIn = registrations.filter((r) => r.status === 'checked-in').length;
+  const pendingPayments = registrations.filter((r) => r.payment_status === 'pending').length;
 
   const stats = [
     { label: 'Total Registrations', value: totalRegistrations, icon: Users, color: 'text-primary' },
@@ -56,7 +62,10 @@ const AdminDashboard = () => {
 
   const handleExport = () => {
     const headers = ['Name', 'Email', 'Phone', 'Event', 'Ticket Type', 'Ticket ID', 'Status', 'Payment', 'Amount'];
-    const rows = filtered.map((r) => [r.name, r.email, r.phone, r.eventTitle, r.ticketType, r.ticketId, r.status, r.paymentStatus, r.amount]);
+    const rows = filtered.map((r) => [
+      r.name, r.email, r.phone || '', (r.events as any)?.title || '', (r.ticket_types as any)?.name || '',
+      r.ticket_id, r.status, r.payment_status, r.amount,
+    ]);
     const csv = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
@@ -73,7 +82,7 @@ const AdminDashboard = () => {
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <h1 className="font-heading text-3xl font-bold">Dashboard</h1>
-            <p className="text-muted-foreground">Manage registrations across all events</p>
+            <p className="text-muted-foreground">Manage registrations across your events</p>
           </div>
           <Button onClick={handleExport} variant="outline" className="gap-2">
             <Download className="h-4 w-4" /> Export CSV
@@ -144,59 +153,67 @@ const AdminDashboard = () => {
               </Select>
             </div>
 
-            <div className="rounded-lg border overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead className="hidden md:table-cell">Event</TableHead>
-                    <TableHead>Ticket</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="hidden sm:table-cell">Payment</TableHead>
-                    <TableHead className="text-right">Amount</TableHead>
-                    <TableHead></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filtered.length === 0 ? (
+            {isLoading ? (
+              <div className="py-8 text-center">
+                <Loader2 className="h-6 w-6 animate-spin text-primary mx-auto" />
+              </div>
+            ) : (
+              <div className="rounded-lg border overflow-x-auto">
+                <Table>
+                  <TableHeader>
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                        No registrations found
-                      </TableCell>
+                      <TableHead>Name</TableHead>
+                      <TableHead className="hidden md:table-cell">Event</TableHead>
+                      <TableHead>Ticket</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="hidden sm:table-cell">Payment</TableHead>
+                      <TableHead className="text-right">Amount</TableHead>
+                      <TableHead></TableHead>
                     </TableRow>
-                  ) : (
-                    filtered.map((reg) => (
-                      <TableRow key={reg.id} className="cursor-pointer hover:bg-muted/50" onClick={() => setSelectedReg(reg)}>
-                        <TableCell>
-                          <div>
-                            <p className="font-medium">{reg.name}</p>
-                            <p className="text-xs text-muted-foreground">{reg.email}</p>
-                          </div>
-                        </TableCell>
-                        <TableCell className="hidden md:table-cell text-sm text-muted-foreground">{reg.eventTitle}</TableCell>
-                        <TableCell>
-                          <span className="text-sm">{reg.ticketType}</span>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className={statusBadge[reg.status]}>{reg.status}</Badge>
-                        </TableCell>
-                        <TableCell className="hidden sm:table-cell">
-                          <Badge variant="outline" className={paymentBadge[reg.paymentStatus]}>{reg.paymentStatus}</Badge>
-                        </TableCell>
-                        <TableCell className="text-right font-medium">
-                          {reg.amount === 0 ? '—' : `₦${reg.amount.toLocaleString()}`}
-                        </TableCell>
-                        <TableCell>
-                          <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); setSelectedReg(reg); }}>
-                            <QrCode className="h-4 w-4" />
-                          </Button>
+                  </TableHeader>
+                  <TableBody>
+                    {filtered.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                          No registrations found
                         </TableCell>
                       </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </div>
+                    ) : (
+                      filtered.map((reg) => (
+                        <TableRow key={reg.id} className="cursor-pointer hover:bg-muted/50" onClick={() => setSelectedReg(reg)}>
+                          <TableCell>
+                            <div>
+                              <p className="font-medium">{reg.name}</p>
+                              <p className="text-xs text-muted-foreground">{reg.email}</p>
+                            </div>
+                          </TableCell>
+                          <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
+                            {(reg.events as any)?.title || '—'}
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-sm">{(reg.ticket_types as any)?.name || '—'}</span>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className={statusBadge[reg.status] || ''}>{reg.status}</Badge>
+                          </TableCell>
+                          <TableCell className="hidden sm:table-cell">
+                            <Badge variant="outline" className={paymentBadge[reg.payment_status] || ''}>{reg.payment_status}</Badge>
+                          </TableCell>
+                          <TableCell className="text-right font-medium">
+                            {reg.amount === 0 ? '—' : `₦${reg.amount.toLocaleString()}`}
+                          </TableCell>
+                          <TableCell>
+                            <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); setSelectedReg(reg); }}>
+                              <QrCode className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -210,21 +227,21 @@ const AdminDashboard = () => {
             <div className="space-y-4">
               <div className="flex justify-center">
                 <div className="p-4 bg-card rounded-xl border">
-                  <QRCodeSVG value={selectedReg.ticketId} size={140} />
+                  <QRCodeSVG value={selectedReg.ticket_id} size={140} />
                 </div>
               </div>
-              <p className="text-center font-heading font-bold text-lg">{selectedReg.ticketId}</p>
+              <p className="text-center font-heading font-bold text-lg">{selectedReg.ticket_id}</p>
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div><span className="text-muted-foreground">Name</span><p className="font-medium">{selectedReg.name}</p></div>
                 <div><span className="text-muted-foreground">Email</span><p className="font-medium">{selectedReg.email}</p></div>
-                <div><span className="text-muted-foreground">Phone</span><p className="font-medium">{selectedReg.phone}</p></div>
-                <div><span className="text-muted-foreground">Ticket</span><p className="font-medium">{selectedReg.ticketType}</p></div>
-                <div><span className="text-muted-foreground">Event</span><p className="font-medium">{selectedReg.eventTitle}</p></div>
+                <div><span className="text-muted-foreground">Phone</span><p className="font-medium">{selectedReg.phone || '—'}</p></div>
+                <div><span className="text-muted-foreground">Ticket</span><p className="font-medium">{(selectedReg.ticket_types as any)?.name || '—'}</p></div>
+                <div><span className="text-muted-foreground">Event</span><p className="font-medium">{(selectedReg.events as any)?.title || '—'}</p></div>
                 <div><span className="text-muted-foreground">Amount</span><p className="font-medium">{selectedReg.amount === 0 ? 'Free' : `₦${selectedReg.amount.toLocaleString()}`}</p></div>
               </div>
               <div className="flex gap-2">
-                <Badge variant="outline" className={statusBadge[selectedReg.status]}>{selectedReg.status}</Badge>
-                <Badge variant="outline" className={paymentBadge[selectedReg.paymentStatus]}>{selectedReg.paymentStatus}</Badge>
+                <Badge variant="outline" className={statusBadge[selectedReg.status] || ''}>{selectedReg.status}</Badge>
+                <Badge variant="outline" className={paymentBadge[selectedReg.payment_status] || ''}>{selectedReg.payment_status}</Badge>
               </div>
             </div>
           )}

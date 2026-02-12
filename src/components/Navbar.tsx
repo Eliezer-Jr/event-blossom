@@ -1,19 +1,27 @@
-import { Link, useLocation } from 'react-router-dom';
-import { Calendar, LayoutDashboard, Menu, X } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Calendar, LayoutDashboard, Menu, X, LogIn, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAuth } from '@/hooks/useAuth';
 
 const Navbar = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { user, signOut } = useAuth();
 
   const links = [
     { to: '/', label: 'Events', icon: Calendar },
-    { to: '/admin', label: 'Dashboard', icon: LayoutDashboard },
+    ...(user ? [{ to: '/admin', label: 'Dashboard', icon: LayoutDashboard }] : []),
   ];
 
   const isActive = (path: string) => location.pathname === path;
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/');
+  };
 
   return (
     <nav className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-xl">
@@ -38,6 +46,17 @@ const Navbar = () => {
               </Button>
             </Link>
           ))}
+          {user ? (
+            <Button variant="ghost" size="sm" className="gap-2" onClick={handleSignOut}>
+              <LogOut className="h-4 w-4" /> Sign Out
+            </Button>
+          ) : (
+            <Link to="/auth">
+              <Button variant="ghost" size="sm" className="gap-2">
+                <LogIn className="h-4 w-4" /> Sign In
+              </Button>
+            </Link>
+          )}
         </div>
 
         <Button
@@ -70,6 +89,17 @@ const Navbar = () => {
                   </Button>
                 </Link>
               ))}
+              {user ? (
+                <Button variant="ghost" className="w-full justify-start gap-2" onClick={() => { handleSignOut(); setMobileOpen(false); }}>
+                  <LogOut className="h-4 w-4" /> Sign Out
+                </Button>
+              ) : (
+                <Link to="/auth" onClick={() => setMobileOpen(false)}>
+                  <Button variant="ghost" className="w-full justify-start gap-2">
+                    <LogIn className="h-4 w-4" /> Sign In
+                  </Button>
+                </Link>
+              )}
             </div>
           </motion.div>
         )}

@@ -1,16 +1,17 @@
 import Navbar from '@/components/Navbar';
 import EventCard from '@/components/EventCard';
-import { mockEvents } from '@/data/mockData';
+import { useEvents } from '@/hooks/useEvents';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Search, Sparkles, ArrowRight } from 'lucide-react';
+import { Search, Sparkles, ArrowRight, Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 
 const Index = () => {
   const [search, setSearch] = useState('');
+  const { data: events = [], isLoading } = useEvents();
 
-  const filtered = mockEvents.filter(
+  const filtered = events.filter(
     (e) =>
       e.title.toLowerCase().includes(search.toLowerCase()) ||
       e.category.toLowerCase().includes(search.toLowerCase()) ||
@@ -68,9 +69,14 @@ const Index = () => {
           <span className="text-sm text-muted-foreground">{filtered.length} events</span>
         </div>
 
-        {filtered.length === 0 ? (
+        {isLoading ? (
+          <div className="py-16 text-center">
+            <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
+            <p className="text-muted-foreground mt-2">Loading events...</p>
+          </div>
+        ) : filtered.length === 0 ? (
           <div className="py-16 text-center text-muted-foreground">
-            <p className="text-lg">No events found matching your search.</p>
+            <p className="text-lg">No events found{search ? ' matching your search' : ''}.</p>
           </div>
         ) : (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
