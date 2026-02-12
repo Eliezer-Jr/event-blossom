@@ -21,7 +21,7 @@ const Auth = () => {
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
   const [loading, setLoading] = useState(false);
-  const { signInWithOtp, verifyOtp } = useAuth();
+  const { sendOtp, verifyOtp } = useAuth();
   const navigate = useNavigate();
 
   const handleSendOtp = async (e: React.FormEvent) => {
@@ -30,7 +30,7 @@ const Auth = () => {
     setLoading(true);
     try {
       const normalized = normalizePhone(phone);
-      const { error } = await signInWithOtp(normalized);
+      const { error } = await sendOtp(normalized);
       if (error) throw error;
       toast.success('OTP sent to your phone!');
       setStep('otp');

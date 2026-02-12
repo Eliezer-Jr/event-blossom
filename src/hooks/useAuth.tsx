@@ -10,8 +10,8 @@ interface AuthContextType {
   loading: boolean;
   roles: AppRole[];
   hasRole: (role: AppRole) => boolean;
-  signInWithOtp: (phone: string) => Promise<{ error: any }>;
-  verifyOtp: (phone: string, token: string) => Promise<{ error: any }>;
+  sendOtp: (phone: string) => Promise<{ error: any }>;
+  verifyOtp: (phone: string, code: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
 }
 
@@ -53,14 +53,54 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signInWithOtp = async (phone: string) => {
-    const { error } = await supabase.auth.signInWithOtp({ phone });
-    return { error };
+  const sendOtp = async (phone: string) => {
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/auth-otp?action=send`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+          body: JSON.stringify({ phone }),
+        }
+      );
+      const data = await res.json();
+      if (!res.ok) return { error: { message: data.error } };
+      return { error: null };
+    } catch (err: any) {
+      return { error: err };
+    }
   };
 
-  const verifyOtp = async (phone: string, token: string) => {
-    const { error } = await supabase.auth.verifyOtp({ phone, token, type: 'sms' });
-    return { error };
+  const verifyOtp = async (phone: string, code: string) => {
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/auth-otp?action=verify`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+          body: JSON.stringify({ phone, code }),
+        }
+      );
+      const data = await res.json();
+      if (!res.ok) return { error: { message: data.error } };
+
+      // Set the session from the response
+      if (data.session) {
+        await supabase.auth.setSession({
+          access_token: data.session.access_token,
+          refresh_token: data.session.refresh_token,
+        });
+      }
+      return { error: null };
+    } catch (err: any) {
+      return { error: err };
+    }
   };
 
   const signOut = async () => {
@@ -71,7 +111,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const hasRole = (role: AppRole) => roles.includes(role);
 
   return (
-    <AuthContext.Provider value={{ session, user, loading, roles, hasRole, signInWithOtp, verifyOtp, signOut }}>
+    <AuthContext.Provider value={{ session, user, loading, roles, hasRole, sendOtp, verifyOtp, signOut }}>
       {children}
     </AuthContext.Provider>
   );
