@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import Navbar from '@/components/Navbar';
 import { useRegistrations, DbRegistration } from '@/hooks/useRegistrations';
+import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -8,13 +9,14 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Search, Users, DollarSign, Ticket, TrendingUp, Download, QrCode, Loader2, PlusCircle, UserCheck, Calendar, Send } from 'lucide-react';
+import { Search, Users, DollarSign, Ticket, TrendingUp, Download, QrCode, Loader2, PlusCircle, UserCheck, Calendar, Send, ShieldCheck } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { QRCodeSVG } from 'qrcode.react';
 import CreateEventForm from '@/components/admin/CreateEventForm';
 import CheckInScanner from '@/components/admin/CheckInScanner';
 import EventManager from '@/components/admin/EventManager';
+import RoleManager from '@/components/admin/RoleManager';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useEvents } from '@/hooks/useEvents';
@@ -43,6 +45,20 @@ const AdminDashboard = () => {
   const [selectedEventForSms, setSelectedEventForSms] = useState('');
   const { data: registrations = [], isLoading } = useRegistrations();
   const { data: events = [] } = useEvents();
+  const { hasRole, roles } = useAuth();
+
+  const isAdmin = hasRole('admin');
+  const isEventManager = hasRole('event_manager');
+  const isFinanceOfficer = hasRole('finance_officer');
+  const isCheckinStaff = hasRole('checkin_staff');
+
+  // Access rules: admin sees everything, others see their specific tabs
+  const canSeeRegistrations = isAdmin || isEventManager || isFinanceOfficer;
+  const canSeeEvents = isAdmin || isEventManager;
+  const canCreateEvents = isAdmin || isEventManager;
+  const canSeeCheckin = isAdmin || isCheckinStaff;
+  const canSeeFinance = isAdmin || isFinanceOfficer;
+  const canSeeRoles = isAdmin;
 
   const filtered = registrations.filter((r) => {
     const eventTitle = (r.events as any)?.title || '';
@@ -110,12 +126,13 @@ const AdminDashboard = () => {
           </div>
         </div>
 
-        <Tabs defaultValue="registrations" className="space-y-6">
-          <TabsList>
-            <TabsTrigger value="registrations" className="gap-2"><Users className="h-4 w-4" /> Registrations</TabsTrigger>
-            <TabsTrigger value="events" className="gap-2"><Calendar className="h-4 w-4" /> My Events</TabsTrigger>
-            <TabsTrigger value="create" className="gap-2"><PlusCircle className="h-4 w-4" /> Create Event</TabsTrigger>
-            <TabsTrigger value="checkin" className="gap-2"><UserCheck className="h-4 w-4" /> Check-In</TabsTrigger>
+        <Tabs defaultValue={canSeeRegistrations ? "registrations" : canSeeCheckin ? "checkin" : "events"} className="space-y-6">
+          <TabsList className="flex-wrap">
+            {canSeeRegistrations && <TabsTrigger value="registrations" className="gap-2"><Users className="h-4 w-4" /> Registrations</TabsTrigger>}
+            {canSeeEvents && <TabsTrigger value="events" className="gap-2"><Calendar className="h-4 w-4" /> My Events</TabsTrigger>}
+            {canCreateEvents && <TabsTrigger value="create" className="gap-2"><PlusCircle className="h-4 w-4" /> Create Event</TabsTrigger>}
+            {canSeeCheckin && <TabsTrigger value="checkin" className="gap-2"><UserCheck className="h-4 w-4" /> Check-In</TabsTrigger>}
+            {canSeeRoles && <TabsTrigger value="roles" className="gap-2"><ShieldCheck className="h-4 w-4" /> Roles</TabsTrigger>}
           </TabsList>
 
           <TabsContent value="registrations" className="space-y-6">
@@ -146,6 +163,7 @@ const AdminDashboard = () => {
                 <Download className="h-4 w-4" /> Export CSV
               </Button>
             </div>
+        {canSeeFinance && (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {stats.map((stat, i) => (
             <motion.div
@@ -168,6 +186,7 @@ const AdminDashboard = () => {
             </motion.div>
           ))}
         </div>
+        )}
 
         <Card>
           <CardHeader>
@@ -286,6 +305,12 @@ const AdminDashboard = () => {
           <TabsContent value="checkin">
             <CheckInScanner />
           </TabsContent>
+
+          {canSeeRoles && (
+            <TabsContent value="roles">
+              <RoleManager />
+            </TabsContent>
+          )}
         </Tabs>
       </div>
 
