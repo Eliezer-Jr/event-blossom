@@ -69,6 +69,25 @@ const EventDetail = () => {
   const spotsLeft = event.capacity - event.registeredCount;
   const selectedTicketType = event.ticketTypes.find((t) => t.id === selectedTicket);
 
+  // Compute effective price: check if any custom field has priceOverrides that apply
+  const getEffectivePrice = (): number => {
+    if (!selectedTicketType) return 0;
+    let price = selectedTicketType.price;
+    if (event.customFields) {
+      for (const field of event.customFields) {
+        if (field.priceOverrides) {
+          const selectedValue = customValues[field.id] as string;
+          if (selectedValue && selectedValue in field.priceOverrides) {
+            price = field.priceOverrides[selectedValue];
+            break;
+          }
+        }
+      }
+    }
+    return price;
+  };
+  const effectivePrice = getEffectivePrice();
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedTicketType || isSubmitting) return;
@@ -84,7 +103,7 @@ const EventDetail = () => {
 
     const normalizedPhone = normalized;
     const ticketId = `${event.title.split(' ').map(w => w[0]).join('')}-${selectedTicketType.name.substring(0, 3).toUpperCase()}-${String(Math.floor(Math.random() * 999)).padStart(3, '0')}`;
-    const isPaid = selectedTicketType.price > 0;
+    const isPaid = effectivePrice > 0;
 
     try {
       const { data: regData, error: regError } = await supabase
@@ -96,7 +115,7 @@ const EventDetail = () => {
           phone: normalizedPhone,
           ticket_type_id: selectedTicketType.id,
           ticket_id: ticketId,
-          amount: selectedTicketType.price,
+          amount: effectivePrice,
           status: isPaid ? 'pending' : 'confirmed',
           payment_status: isPaid ? 'pending' : 'free',
           custom_field_values: customValues as any,
@@ -111,7 +130,7 @@ const EventDetail = () => {
           body: {
             phone: normalizedPhone,
             email: formData.email,
-            amount: selectedTicketType.price,
+            amount: effectivePrice,
             currency: 'GHS',
             description: `${event.title} - ${selectedTicketType.name} ticket`,
             registration_id: regData.id,
@@ -152,7 +171,7 @@ const EventDetail = () => {
         ticketId: ticketId,
         status: isPaid ? 'pending' : 'confirmed',
         paymentStatus: isPaid ? 'pending' : 'free',
-        amount: selectedTicketType.price,
+        amount: effectivePrice,
         registeredAt: new Date().toISOString(),
       };
 
@@ -406,10 +425,15 @@ const EventDetail = () => {
                             )}
                           </div>
                         ))}
-                        {selectedTicketType && selectedTicketType.price > 0 && (
+                        {selectedTicketType && (
                           <div className="rounded-lg bg-secondary p-3 text-sm">
-                            <p className="font-medium">Amount: <span className="text-primary font-bold">GH₵{selectedTicketType.price.toLocaleString()}</span></p>
-                            <p className="text-muted-foreground text-xs mt-1">Payment will be processed on next step</p>
+                            <p className="font-medium">Amount: <span className="text-primary font-bold">
+                              {effectivePrice === 0 ? 'Free' : `GH₵${effectivePrice.toLocaleString()}`}
+                            </span></p>
+                            {effectivePrice > 0 && <p className="text-muted-foreground text-xs mt-1">Payment will be processed on next step</p>}
+                            {effectivePrice !== selectedTicketType.price && (
+                              <p className="text-muted-foreground text-xs mt-1">Price adjusted based on designation</p>
+                            )}
                           </div>
                         )}
                         <Button type="submit" className="w-full" disabled={!selectedTicket || isSubmitting}>
