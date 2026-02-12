@@ -8,7 +8,7 @@ export const useEvents = () => {
     queryFn: async (): Promise<Event[]> => {
       const { data: events, error } = await supabase
         .from('events')
-        .select('*, ticket_types(*)')
+        .select('*, ticket_types(*), custom_fields')
         .order('date', { ascending: true });
 
       if (error) throw error;
@@ -26,6 +26,7 @@ export const useEvents = () => {
         status: e.status as Event['status'],
         organizer: e.organizer || '',
         category: e.category,
+        customFields: (e.custom_fields as any) || [],
         ticketTypes: (e.ticket_types || []).map((t: any): TicketType => ({
           id: t.id,
           name: t.name,
@@ -47,7 +48,7 @@ export const useEvent = (id: string | undefined) => {
 
       const { data: e, error } = await supabase
         .from('events')
-        .select('*, ticket_types(*)')
+        .select('*, ticket_types(*), custom_fields')
         .eq('id', id)
         .single();
 
@@ -66,6 +67,7 @@ export const useEvent = (id: string | undefined) => {
         status: e.status as Event['status'],
         organizer: e.organizer || '',
         category: e.category,
+        customFields: (e.custom_fields as any) || [],
         ticketTypes: (e.ticket_types || []).map((t: any): TicketType => ({
           id: t.id,
           name: t.name,

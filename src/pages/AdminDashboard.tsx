@@ -8,12 +8,13 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Search, Users, DollarSign, Ticket, TrendingUp, Download, QrCode, Loader2, PlusCircle, UserCheck } from 'lucide-react';
+import { Search, Users, DollarSign, Ticket, TrendingUp, Download, QrCode, Loader2, PlusCircle, UserCheck, Calendar } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { QRCodeSVG } from 'qrcode.react';
 import CreateEventForm from '@/components/admin/CreateEventForm';
 import CheckInScanner from '@/components/admin/CheckInScanner';
+import EventManager from '@/components/admin/EventManager';
 
 const statusBadge: Record<string, string> = {
   confirmed: 'bg-success/10 text-success border-success/20',
@@ -90,6 +91,7 @@ const AdminDashboard = () => {
         <Tabs defaultValue="registrations" className="space-y-6">
           <TabsList>
             <TabsTrigger value="registrations" className="gap-2"><Users className="h-4 w-4" /> Registrations</TabsTrigger>
+            <TabsTrigger value="events" className="gap-2"><Calendar className="h-4 w-4" /> My Events</TabsTrigger>
             <TabsTrigger value="create" className="gap-2"><PlusCircle className="h-4 w-4" /> Create Event</TabsTrigger>
             <TabsTrigger value="checkin" className="gap-2"><UserCheck className="h-4 w-4" /> Check-In</TabsTrigger>
           </TabsList>
@@ -227,6 +229,10 @@ const AdminDashboard = () => {
             )}
           </CardContent>
         </Card>
+          </TabsContent>
+
+          <TabsContent value="events">
+            <EventManager />
           </TabsContent>
 
           <TabsContent value="create">

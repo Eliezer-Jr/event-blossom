@@ -19,6 +19,7 @@ export type Database = {
           capacity: number
           category: string
           created_at: string
+          custom_fields: Json | null
           date: string
           description: string | null
           id: string
@@ -36,6 +37,7 @@ export type Database = {
           capacity?: number
           category?: string
           created_at?: string
+          custom_fields?: Json | null
           date: string
           description?: string | null
           id?: string
@@ -53,6 +55,7 @@ export type Database = {
           capacity?: number
           category?: string
           created_at?: string
+          custom_fields?: Json | null
           date?: string
           description?: string | null
           id?: string
@@ -106,6 +109,7 @@ export type Database = {
           amount: number
           checked_in_at: string | null
           created_at: string
+          custom_field_values: Json | null
           email: string
           event_id: string
           id: string
@@ -123,6 +127,7 @@ export type Database = {
           amount?: number
           checked_in_at?: string | null
           created_at?: string
+          custom_field_values?: Json | null
           email: string
           event_id: string
           id?: string
@@ -140,6 +145,7 @@ export type Database = {
           amount?: number
           checked_in_at?: string | null
           created_at?: string
+          custom_field_values?: Json | null
           email?: string
           event_id?: string
           id?: string

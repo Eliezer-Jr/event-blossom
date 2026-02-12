@@ -10,6 +10,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
+import { CustomField } from '@/types/customField';
+import CustomFieldBuilder from './CustomFieldBuilder';
 
 interface TicketTypeInput {
   name: string;
@@ -36,6 +38,7 @@ const CreateEventForm = () => {
     image_url: '',
   });
   const [tickets, setTickets] = useState<TicketTypeInput[]>([emptyTicket()]);
+  const [customFields, setCustomFields] = useState<CustomField[]>([]);
 
   const updateForm = (key: string, value: string) => setForm((f) => ({ ...f, [key]: value }));
 
@@ -68,6 +71,7 @@ const CreateEventForm = () => {
           organizer: form.organizer,
           image_url: form.image_url || null,
           user_id: user.id,
+          custom_fields: customFields as any,
         })
         .select()
         .single();
@@ -89,6 +93,7 @@ const CreateEventForm = () => {
       queryClient.invalidateQueries({ queryKey: ['events'] });
       setForm({ title: '', description: '', date: '', time: '', venue: '', capacity: '100', category: 'General', organizer: '', image_url: '' });
       setTickets([emptyTicket()]);
+      setCustomFields([]);
     } catch (err: any) {
       toast.error(err.message || 'Failed to create event');
     } finally {
@@ -180,6 +185,8 @@ const CreateEventForm = () => {
               </div>
             ))}
           </div>
+
+          <CustomFieldBuilder fields={customFields} onChange={setCustomFields} />
 
           <Button type="submit" className="w-full" disabled={isSubmitting}>
             {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creating...</> : 'Create Event'}
