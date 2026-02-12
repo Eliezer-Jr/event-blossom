@@ -17,6 +17,16 @@ import { Registration } from '@/types/event';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 
+const normalizeGhanaPhone = (phone: string): { normalized: string | null; error: string | null } => {
+  let cleaned = phone.replace(/[\s\-()]/g, '');
+  if (cleaned.startsWith('+')) cleaned = cleaned.substring(1);
+  if (cleaned.startsWith('0') && cleaned.length === 10) cleaned = '233' + cleaned.substring(1);
+  if (/^\d{12}$/.test(cleaned) && cleaned.startsWith('233')) {
+    return { normalized: cleaned, error: null };
+  }
+  return { normalized: null, error: 'Enter a valid Ghana phone number (233XXXXXXXXX)' };
+};
+
 const EventDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -28,6 +38,7 @@ const EventDetail = () => {
   const [selectedTicket, setSelectedTicket] = useState('');
   const [formData, setFormData] = useState({ name: '', email: '', phone: '' });
   const [customValues, setCustomValues] = useState<Record<string, string | boolean>>({});
+  const [phoneError, setPhoneError] = useState('');
 
   if (isLoading) {
     return (
@@ -62,8 +73,16 @@ const EventDetail = () => {
     e.preventDefault();
     if (!selectedTicketType || isSubmitting) return;
 
+    const { normalized, error: phoneErr } = normalizeGhanaPhone(formData.phone);
+    if (phoneErr || !normalized) {
+      setPhoneError(phoneErr || 'Invalid phone number');
+      return;
+    }
+    setPhoneError('');
+
     setIsSubmitting(true);
 
+    const normalizedPhone = normalized;
     const ticketId = `${event.title.split(' ').map(w => w[0]).join('')}-${selectedTicketType.name.substring(0, 3).toUpperCase()}-${String(Math.floor(Math.random() * 999)).padStart(3, '0')}`;
     const isPaid = selectedTicketType.price > 0;
 
@@ -74,7 +93,7 @@ const EventDetail = () => {
           event_id: event.id,
           name: formData.name,
           email: formData.email,
-          phone: formData.phone,
+          phone: normalizedPhone,
           ticket_type_id: selectedTicketType.id,
           ticket_id: ticketId,
           amount: selectedTicketType.price,
@@ -90,7 +109,7 @@ const EventDetail = () => {
       if (isPaid) {
         const { data: paymentResult, error: paymentError } = await supabase.functions.invoke('moolre-payment', {
           body: {
-            phone: formData.phone,
+            phone: normalizedPhone,
             amount: selectedTicketType.price,
             currency: 'NGN',
             description: `${event.title} - ${selectedTicketType.name} ticket`,
@@ -111,7 +130,7 @@ const EventDetail = () => {
       // Send SMS confirmation (non-blocking)
       supabase.functions.invoke('moolre-sms', {
         body: {
-          recipients: formData.phone,
+          recipients: normalizedPhone,
           message: `Hi ${formData.name}, your registration for "${event.title}" is ${isPaid ? 'pending payment' : 'confirmed'}. Ticket ID: ${ticketId}. ${isPaid ? 'Please complete payment via the USSD prompt on your phone.' : 'See you there!'}`,
         },
       }).catch((err) => console.error('SMS error:', err));
@@ -122,7 +141,7 @@ const EventDetail = () => {
         eventTitle: event.title,
         name: formData.name,
         email: formData.email,
-        phone: formData.phone,
+        phone: normalizedPhone,
         ticketType: selectedTicketType.name,
         ticketId: ticketId,
         status: isPaid ? 'pending' : 'confirmed',
@@ -304,9 +323,20 @@ const EventDetail = () => {
                             id="phone"
                             required
                             maxLength={20}
+                            placeholder="233XXXXXXXXX"
                             value={formData.phone}
-                            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                            onChange={(e) => {
+                              setFormData({ ...formData, phone: e.target.value });
+                              if (phoneError) setPhoneError('');
+                            }}
+                            onBlur={() => {
+                              if (formData.phone) {
+                                const { error } = normalizeGhanaPhone(formData.phone);
+                                setPhoneError(error || '');
+                              }
+                            }}
                           />
+                          {phoneError && <p className="text-sm text-destructive mt-1">{phoneError}</p>}
                         </div>
                         <div>
                           <Label>Ticket Type</Label>
