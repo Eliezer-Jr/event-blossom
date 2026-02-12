@@ -42,8 +42,19 @@ Deno.serve(async (req) => {
       }),
     });
 
-    const smsData = await smsResponse.json();
-    console.log("Moolre SMS response:", JSON.stringify(smsData));
+    const responseText = await smsResponse.text();
+    console.log("Moolre SMS raw response:", responseText);
+
+    let smsData;
+    try {
+      smsData = JSON.parse(responseText);
+    } catch {
+      console.error("Moolre SMS returned non-JSON:", responseText.substring(0, 200));
+      return new Response(
+        JSON.stringify({ error: "Moolre API returned an invalid response. The API URL or key may be incorrect." }),
+        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     if (!smsResponse.ok || smsData.status !== 1) {
       return new Response(
