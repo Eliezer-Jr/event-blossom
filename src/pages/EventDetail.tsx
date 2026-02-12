@@ -8,11 +8,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { CalendarDays, MapPin, Users, Clock, ArrowLeft, Ticket, CheckCircle2 } from 'lucide-react';
+import { CalendarDays, MapPin, Users, Clock, ArrowLeft, Ticket, CheckCircle2, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import TicketCard from '@/components/TicketCard';
 import { Registration } from '@/types/event';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 const EventDetail = () => {
   const { id } = useParams();
@@ -20,6 +21,7 @@ const EventDetail = () => {
   const event = mockEvents.find((e) => e.id === id);
   const [showForm, setShowForm] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [ticketData, setTicketData] = useState<Registration | null>(null);
   const [selectedTicket, setSelectedTicket] = useState('');
   const [formData, setFormData] = useState({ name: '', email: '', phone: '' });
@@ -41,28 +43,89 @@ const EventDetail = () => {
   const spotsLeft = event.capacity - event.registeredCount;
   const selectedTicketType = event.ticketTypes.find((t) => t.id === selectedTicket);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedTicketType) return;
+    if (!selectedTicketType || isSubmitting) return;
 
-    const registration: Registration = {
-      id: `r-${Date.now()}`,
-      eventId: event.id,
-      eventTitle: event.title,
-      name: formData.name,
-      email: formData.email,
-      phone: formData.phone,
-      ticketType: selectedTicketType.name,
-      ticketId: `${event.title.split(' ').map(w => w[0]).join('')}-${selectedTicketType.name.substring(0, 3).toUpperCase()}-${String(Math.floor(Math.random() * 999)).padStart(3, '0')}`,
-      status: selectedTicketType.price === 0 ? 'confirmed' : 'pending',
-      paymentStatus: selectedTicketType.price === 0 ? 'free' : 'pending',
-      amount: selectedTicketType.price,
-      registeredAt: new Date().toISOString(),
-    };
+    setIsSubmitting(true);
 
-    setTicketData(registration);
-    setSubmitted(true);
-    toast.success('Registration successful!');
+    const ticketId = `${event.title.split(' ').map(w => w[0]).join('')}-${selectedTicketType.name.substring(0, 3).toUpperCase()}-${String(Math.floor(Math.random() * 999)).padStart(3, '0')}`;
+    const isPaid = selectedTicketType.price > 0;
+
+    try {
+      // Insert registration into database
+      const { data: regData, error: regError } = await supabase
+        .from('registrations')
+        .insert({
+          event_id: event.id,
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          ticket_type_id: selectedTicketType.id,
+          ticket_id: ticketId,
+          amount: selectedTicketType.price,
+          status: isPaid ? 'pending' : 'confirmed',
+          payment_status: isPaid ? 'pending' : 'free',
+        })
+        .select()
+        .single();
+
+      if (regError) throw regError;
+
+      // If paid ticket, initiate Moolre payment
+      if (isPaid) {
+        const { data: paymentResult, error: paymentError } = await supabase.functions.invoke('moolre-payment', {
+          body: {
+            phone: formData.phone,
+            amount: selectedTicketType.price,
+            currency: 'NGN',
+            description: `${event.title} - ${selectedTicketType.name} ticket`,
+            registration_id: regData.id,
+            event_id: event.id,
+            ticket_type_id: selectedTicketType.id,
+          },
+        });
+
+        if (paymentError) {
+          console.error('Payment initiation error:', paymentError);
+          toast.error('Payment prompt failed. Please try again.');
+        } else {
+          toast.success(paymentResult?.message || 'Payment prompt sent to your phone!');
+        }
+      }
+
+      // Send SMS confirmation
+      await supabase.functions.invoke('moolre-sms', {
+        body: {
+          recipients: formData.phone,
+          message: `Hi ${formData.name}, your registration for "${event.title}" is ${isPaid ? 'pending payment' : 'confirmed'}. Ticket ID: ${ticketId}. ${isPaid ? 'Please complete payment via the USSD prompt on your phone.' : 'See you there!'}`,
+        },
+      });
+
+      const registration: Registration = {
+        id: regData.id,
+        eventId: event.id,
+        eventTitle: event.title,
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        ticketType: selectedTicketType.name,
+        ticketId: ticketId,
+        status: isPaid ? 'pending' : 'confirmed',
+        paymentStatus: isPaid ? 'pending' : 'free',
+        amount: selectedTicketType.price,
+        registeredAt: new Date().toISOString(),
+      };
+
+      setTicketData(registration);
+      setSubmitted(true);
+      toast.success('Registration successful!');
+    } catch (error: any) {
+      console.error('Registration error:', error);
+      toast.error(error.message || 'Registration failed. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -252,8 +315,12 @@ const EventDetail = () => {
                             <p className="text-muted-foreground text-xs mt-1">Payment will be processed on next step</p>
                           </div>
                         )}
-                        <Button type="submit" className="w-full" disabled={!selectedTicket}>
-                          Complete Registration
+                        <Button type="submit" className="w-full" disabled={!selectedTicket || isSubmitting}>
+                          {isSubmitting ? (
+                            <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Processing...</>
+                          ) : (
+                            'Complete Registration'
+                          )}
                         </Button>
                       </form>
                     </CardContent>
