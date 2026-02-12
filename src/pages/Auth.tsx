@@ -1,39 +1,58 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Calendar, Loader2 } from 'lucide-react';
+import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
+import { Calendar, Loader2, Phone } from 'lucide-react';
 import { toast } from 'sonner';
 
+const normalizePhone = (phone: string): string => {
+  let cleaned = phone.replace(/[\s\-()]/g, '');
+  if (cleaned.startsWith('0') && cleaned.length === 10) cleaned = '+233' + cleaned.substring(1);
+  if (!cleaned.startsWith('+')) cleaned = '+' + cleaned;
+  return cleaned;
+};
+
 const Auth = () => {
-  const [isLogin, setIsLogin] = useState(true);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [displayName, setDisplayName] = useState('');
+  const [step, setStep] = useState<'phone' | 'otp'>('phone');
+  const [phone, setPhone] = useState('');
+  const [otp, setOtp] = useState('');
   const [loading, setLoading] = useState(false);
-  const { signIn, signUp } = useAuth();
+  const { signInWithOtp, verifyOtp } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!phone.trim()) return;
     setLoading(true);
-
     try {
-      if (isLogin) {
-        const { error } = await signIn(email, password);
-        if (error) throw error;
-        toast.success('Welcome back!');
-        navigate('/admin');
-      } else {
-        const { error } = await signUp(email, password, displayName);
-        if (error) throw error;
-        toast.success('Account created! Check your email to verify.');
-      }
+      const normalized = normalizePhone(phone);
+      const { error } = await signInWithOtp(normalized);
+      if (error) throw error;
+      toast.success('OTP sent to your phone!');
+      setStep('otp');
     } catch (error: any) {
-      toast.error(error.message || 'Authentication failed');
+      toast.error(error.message || 'Failed to send OTP');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (otp.length < 6) return;
+    setLoading(true);
+    try {
+      const normalized = normalizePhone(phone);
+      const { error } = await verifyOtp(normalized, otp);
+      if (error) throw error;
+      toast.success('Welcome!');
+      navigate('/admin');
+    } catch (error: any) {
+      toast.error(error.message || 'Invalid OTP');
     } finally {
       setLoading(false);
     }
@@ -50,73 +69,72 @@ const Auth = () => {
             <span className="font-heading text-2xl font-bold">EventFlow</span>
           </Link>
           <h1 className="font-heading text-2xl font-bold">
-            {isLogin ? 'Welcome back' : 'Create your account'}
+            {step === 'phone' ? 'Sign in with Phone' : 'Enter OTP'}
           </h1>
           <p className="text-muted-foreground mt-1">
-            {isLogin ? 'Sign in to manage your events' : 'Start organizing amazing events'}
+            {step === 'phone'
+              ? 'Enter your phone number to receive a verification code'
+              : `We sent a code to ${normalizePhone(phone)}`}
           </p>
         </div>
 
         <Card>
           <CardContent className="pt-6">
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {!isLogin && (
+            {step === 'phone' ? (
+              <form onSubmit={handleSendOtp} className="space-y-4">
                 <div>
-                  <Label htmlFor="displayName">Display Name</Label>
-                  <Input
-                    id="displayName"
-                    required
-                    value={displayName}
-                    onChange={(e) => setDisplayName(e.target.value)}
-                    placeholder="Your name"
-                  />
+                  <Label htmlFor="phone">Phone Number</Label>
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="phone"
+                      type="tel"
+                      required
+                      className="pl-9"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      placeholder="0241234567"
+                    />
+                  </div>
                 </div>
-              )}
-              <div>
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@example.com"
-                />
-              </div>
-              <div>
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  required
-                  minLength={6}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                />
-              </div>
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? (
-                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Please wait...</>
-                ) : isLogin ? (
-                  'Sign In'
-                ) : (
-                  'Create Account'
-                )}
-              </Button>
-            </form>
-            <div className="mt-4 text-center text-sm">
-              <span className="text-muted-foreground">
-                {isLogin ? "Don't have an account? " : 'Already have an account? '}
-              </span>
-              <button
-                type="button"
-                className="text-primary font-medium hover:underline"
-                onClick={() => setIsLogin(!isLogin)}
-              >
-                {isLogin ? 'Sign up' : 'Sign in'}
-              </button>
-            </div>
+                <Button type="submit" className="w-full" disabled={loading}>
+                  {loading ? (
+                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Sending...</>
+                  ) : (
+                    'Send OTP'
+                  )}
+                </Button>
+              </form>
+            ) : (
+              <form onSubmit={handleVerifyOtp} className="space-y-4">
+                <div className="flex justify-center">
+                  <InputOTP maxLength={6} value={otp} onChange={setOtp}>
+                    <InputOTPGroup>
+                      <InputOTPSlot index={0} />
+                      <InputOTPSlot index={1} />
+                      <InputOTPSlot index={2} />
+                      <InputOTPSlot index={3} />
+                      <InputOTPSlot index={4} />
+                      <InputOTPSlot index={5} />
+                    </InputOTPGroup>
+                  </InputOTP>
+                </div>
+                <Button type="submit" className="w-full" disabled={loading || otp.length < 6}>
+                  {loading ? (
+                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Verifying...</>
+                  ) : (
+                    'Verify & Sign In'
+                  )}
+                </Button>
+                <button
+                  type="button"
+                  className="w-full text-sm text-muted-foreground hover:text-foreground"
+                  onClick={() => { setStep('phone'); setOtp(''); }}
+                >
+                  Change phone number
+                </button>
+              </form>
+            )}
           </CardContent>
         </Card>
       </div>
