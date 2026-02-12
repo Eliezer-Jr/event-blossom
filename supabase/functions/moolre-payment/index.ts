@@ -32,7 +32,7 @@ Deno.serve(async (req) => {
     }
 
     // Initiate USSD payment collection via Moolre
-    const moolreResponse = await fetch(`${MOOLRE_API_BASE}/api/v1/payment/collect`, {
+    const moolreResponse = await fetch(`${MOOLRE_API_BASE}/open/transact/payment`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
