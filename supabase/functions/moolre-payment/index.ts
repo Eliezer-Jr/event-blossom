@@ -31,6 +31,9 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Convert international format (233XXXXXXXXX) to local (0XXXXXXXXX) for Moolre
+    const localPhone = phone.startsWith('233') ? '0' + phone.substring(3) : phone;
+
     // Initiate USSD payment collection via Moolre
     const moolreResponse = await fetch(`${MOOLRE_API_BASE}/open/transact/payment`, {
       method: "POST",
@@ -44,7 +47,7 @@ Deno.serve(async (req) => {
         type: 1,
         channel: "13",
         currency: currency || "GHS",
-        payer: phone,
+        payer: localPhone,
         amount,
         accountnumber: "10595606038423",
         externalref: registration_id,

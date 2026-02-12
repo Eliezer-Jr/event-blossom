@@ -26,8 +26,9 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Ensure recipients is an array
-    const recipientList = Array.isArray(recipients) ? recipients : [recipients];
+    // Ensure recipients is an array and convert to local format (0XXXXXXXXX)
+    const rawList = Array.isArray(recipients) ? recipients : [recipients];
+    const recipientList = rawList.map((r: string) => r.startsWith('233') ? '0' + r.substring(3) : r);
 
     const smsResponse = await fetch(`${MOOLRE_API_BASE}/open/sms/send`, {
       method: "POST",
