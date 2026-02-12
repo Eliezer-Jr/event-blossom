@@ -49,8 +49,19 @@ Deno.serve(async (req) => {
       }),
     });
 
-    const moolreData = await moolreResponse.json();
-    console.log("Moolre payment response:", JSON.stringify(moolreData));
+    const responseText = await moolreResponse.text();
+    console.log("Moolre payment raw response:", responseText);
+
+    let moolreData;
+    try {
+      moolreData = JSON.parse(responseText);
+    } catch {
+      console.error("Moolre payment returned non-JSON:", responseText.substring(0, 200));
+      return new Response(
+        JSON.stringify({ error: "Moolre API returned an invalid response. The API URL or key may be incorrect." }),
+        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     if (!moolreResponse.ok || moolreData.status !== 1) {
       // Update registration to reflect failed payment initiation
