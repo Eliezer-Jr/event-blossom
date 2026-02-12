@@ -41,11 +41,13 @@ Deno.serve(async (req) => {
         "X-API-PUBKEY": MOOLRE_API_PUBKEY,
       },
       body: JSON.stringify({
-        phone,
+        type: 1,
+        channel: "13",
+        currency: currency || "GHS",
+        payer: phone,
         amount,
-        currency,
-        description: description || "Event ticket payment",
-        reference: registration_id,
+        externalref: registration_id,
+        reference: description || "Event ticket payment",
       }),
     });
 
