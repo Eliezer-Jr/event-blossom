@@ -17,7 +17,7 @@ Deno.serve(async (req) => {
       throw new Error("MOOLRE_VAS_KEY is not configured");
     }
 
-    const { recipients, message, sender_id = "EventsApp" } = await req.json();
+    const { recipients, message, sender_id = "BaptistConf" } = await req.json();
 
     if (!recipients || !message) {
       return new Response(
