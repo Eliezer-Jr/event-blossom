@@ -107,7 +107,7 @@ Deno.serve(async (req) => {
       .from("registrations")
       .update({
         payment_status: "pending",
-        stripe_payment_intent_id: moolreData.data?.reference || moolreData.data?.link || null,
+        stripe_payment_intent_id: moolreData.data?.reference || null,
       })
       .eq("id", registration_id);
 
@@ -115,7 +115,7 @@ Deno.serve(async (req) => {
       JSON.stringify({
         success: true,
         message: moolreData.message || "Payment link generated",
-        payment_link: moolreData.data?.link || moolreData.data?.url || null,
+        payment_link: moolreData.data?.authorization_url || null,
         data: moolreData.data,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
