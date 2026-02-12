@@ -75,7 +75,7 @@ Deno.serve(async (req) => {
       if (MOOLRE_VAS_KEY) {
         try {
           const eventTitle = (registration as any).events?.title || "your event";
-          await fetch("https://api.moolre.com/api/v1/sms/send", {
+          await fetch("https://api.moolre.com/open/sms/send", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
