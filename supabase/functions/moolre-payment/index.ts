@@ -22,36 +22,43 @@ Deno.serve(async (req) => {
       throw new Error("Moolre API credentials not configured");
     }
 
-    const { phone, amount, currency = "GHS", description, registration_id, event_id, ticket_type_id } = await req.json();
+    const { phone, amount, email, currency = "GHS", description, registration_id, event_id, ticket_type_id, redirect_url } = await req.json();
 
-    if (!phone || !amount || !registration_id || !event_id || !ticket_type_id) {
+    if (!amount || !registration_id || !event_id || !ticket_type_id) {
       return new Response(
-        JSON.stringify({ error: "Missing required fields: phone, amount, registration_id, event_id, ticket_type_id" }),
+        JSON.stringify({ error: "Missing required fields: amount, registration_id, event_id, ticket_type_id" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Convert international format (233XXXXXXXXX) to local (0XXXXXXXXX) for Moolre
-    const localPhone = phone.startsWith('233') ? '0' + phone.substring(3) : phone;
+    // Webhook callback URL for payment confirmation
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+    const callbackUrl = `${SUPABASE_URL}/functions/v1/moolre-webhook`;
 
-    // Initiate USSD payment collection via Moolre
-    const moolreResponse = await fetch(`${MOOLRE_API_BASE}/open/transact/payment`, {
+    // Generate payment link via Moolre
+    const moolreResponse = await fetch(`${MOOLRE_API_BASE}/embed/link`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "X-API-USER": MOOLRE_API_USER,
-        "X-API-KEY": MOOLRE_API_KEY,
         "X-API-PUBKEY": MOOLRE_API_PUBKEY,
       },
       body: JSON.stringify({
         type: 1,
-        channel: "13",
-        currency: currency || "GHS",
-        payer: localPhone,
         amount,
-        accountnumber: "10595606038423",
+        email: email || "",
         externalref: registration_id,
-        reference: description || "Event ticket payment",
+        callback: callbackUrl,
+        redirect: redirect_url || "",
+        reusable: "0",
+        currency: currency || "GHS",
+        accountnumber: "10595606038423",
+        metadata: {
+          event_id,
+          ticket_type_id,
+          phone: phone || "",
+          description: description || "Event ticket payment",
+        },
       }),
     });
 
@@ -100,14 +107,15 @@ Deno.serve(async (req) => {
       .from("registrations")
       .update({
         payment_status: "pending",
-        stripe_payment_intent_id: moolreData.data?.reference || moolreData.data?.transaction_id || null,
+        stripe_payment_intent_id: moolreData.data?.reference || moolreData.data?.link || null,
       })
       .eq("id", registration_id);
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: moolreData.message || "Payment prompt sent to your phone",
+        message: moolreData.message || "Payment link generated",
+        payment_link: moolreData.data?.link || moolreData.data?.url || null,
         data: moolreData.data,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }

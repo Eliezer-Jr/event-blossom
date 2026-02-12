@@ -110,20 +110,26 @@ const EventDetail = () => {
         const { data: paymentResult, error: paymentError } = await supabase.functions.invoke('moolre-payment', {
           body: {
             phone: normalizedPhone,
+            email: formData.email,
             amount: selectedTicketType.price,
             currency: 'GHS',
             description: `${event.title} - ${selectedTicketType.name} ticket`,
             registration_id: regData.id,
             event_id: event.id,
             ticket_type_id: selectedTicketType.id,
+            redirect_url: window.location.href,
           },
         });
 
         if (paymentError) {
           console.error('Payment initiation error:', paymentError);
-          toast.error('Payment prompt failed. Please try again.');
+          toast.error('Payment failed. Please try again.');
+        } else if (paymentResult?.payment_link) {
+          toast.success('Redirecting to payment...');
+          window.location.href = paymentResult.payment_link;
+          return; // Don't show ticket yet — wait for payment confirmation
         } else {
-          toast.success(paymentResult?.message || 'Payment prompt sent to your phone!');
+          toast.success(paymentResult?.message || 'Payment link generated!');
         }
       }
 
