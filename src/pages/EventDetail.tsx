@@ -248,7 +248,7 @@ const EventDetail = () => {
                     </div>
                     <div className="text-right">
                       <p className="font-heading text-lg font-bold text-primary">
-                        {ticket.price === 0 ? 'Free' : `₦${ticket.price.toLocaleString()}`}
+                        {ticket.price === 0 ? 'Free' : `GH₵${ticket.price.toLocaleString()}`}
                       </p>
                     </div>
                   </div>
@@ -353,7 +353,7 @@ const EventDetail = () => {
                             <SelectContent>
                               {event.ticketTypes.filter((t) => t.quantity - t.sold > 0).map((t) => (
                                 <SelectItem key={t.id} value={t.id}>
-                                  {t.name} — {t.price === 0 ? 'Free' : `₦${t.price.toLocaleString()}`}
+                                  {t.name} — {t.price === 0 ? 'Free' : `GH₵${t.price.toLocaleString()}`}
                                 </SelectItem>
                               ))}
                             </SelectContent>
@@ -408,7 +408,7 @@ const EventDetail = () => {
                         ))}
                         {selectedTicketType && selectedTicketType.price > 0 && (
                           <div className="rounded-lg bg-secondary p-3 text-sm">
-                            <p className="font-medium">Amount: <span className="text-primary font-bold">₦{selectedTicketType.price.toLocaleString()}</span></p>
+                            <p className="font-medium">Amount: <span className="text-primary font-bold">GH₵{selectedTicketType.price.toLocaleString()}</span></p>
                             <p className="text-muted-foreground text-xs mt-1">Payment will be processed on next step</p>
                           </div>
                         )}

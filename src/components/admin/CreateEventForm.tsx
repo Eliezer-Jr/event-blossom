@@ -168,7 +168,7 @@ const CreateEventForm = () => {
                   <Input placeholder="e.g. Regular" value={ticket.name} onChange={(e) => updateTicket(i, 'name', e.target.value)} />
                 </div>
                 <div>
-                  <Label>Price (₦)</Label>
+                  <Label>Price (GH₵)</Label>
                   <Input type="number" min="0" value={ticket.price} onChange={(e) => updateTicket(i, 'price', e.target.value)} />
                 </div>
                 <div>

@@ -146,7 +146,7 @@ const CheckInScanner = () => {
                   <div><span className="text-muted-foreground">Event</span><p className="font-medium">{found.events?.title || '—'}</p></div>
                   <div><span className="text-muted-foreground">Ticket</span><p className="font-medium">{found.ticket_types?.name || '—'}</p></div>
                   <div><span className="text-muted-foreground">Ticket ID</span><p className="font-medium font-mono text-xs">{found.ticket_id}</p></div>
-                  <div><span className="text-muted-foreground">Amount</span><p className="font-medium">{found.amount === 0 ? 'Free' : `₦${found.amount.toLocaleString()}`}</p></div>
+                  <div><span className="text-muted-foreground">Amount</span><p className="font-medium">{found.amount === 0 ? 'Free' : `GH₵${found.amount.toLocaleString()}`}</p></div>
                 </div>
                 <div className="flex gap-2">
                   <Badge variant="outline" className={found.payment_status === 'paid' ? 'bg-success/10 text-success border-success/20' : found.payment_status === 'free' ? 'bg-secondary text-secondary-foreground' : 'bg-warning/10 text-warning border-warning/20'}>
