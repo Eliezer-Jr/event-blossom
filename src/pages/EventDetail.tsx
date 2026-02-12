@@ -78,7 +78,7 @@ const EventDetail = () => {
           ticket_type_id: selectedTicketType.id,
           ticket_id: ticketId,
           amount: selectedTicketType.price,
-          status: 'confirmed',
+          status: isPaid ? 'pending' : 'confirmed',
           payment_status: isPaid ? 'pending' : 'free',
           custom_field_values: customValues as any,
         })
@@ -86,6 +86,35 @@ const EventDetail = () => {
         .single();
 
       if (regError) throw regError;
+
+      if (isPaid) {
+        const { data: paymentResult, error: paymentError } = await supabase.functions.invoke('moolre-payment', {
+          body: {
+            phone: formData.phone,
+            amount: selectedTicketType.price,
+            currency: 'NGN',
+            description: `${event.title} - ${selectedTicketType.name} ticket`,
+            registration_id: regData.id,
+            event_id: event.id,
+            ticket_type_id: selectedTicketType.id,
+          },
+        });
+
+        if (paymentError) {
+          console.error('Payment initiation error:', paymentError);
+          toast.error('Payment prompt failed. Please try again.');
+        } else {
+          toast.success(paymentResult?.message || 'Payment prompt sent to your phone!');
+        }
+      }
+
+      // Send SMS confirmation (non-blocking)
+      supabase.functions.invoke('moolre-sms', {
+        body: {
+          recipients: formData.phone,
+          message: `Hi ${formData.name}, your registration for "${event.title}" is ${isPaid ? 'pending payment' : 'confirmed'}. Ticket ID: ${ticketId}. ${isPaid ? 'Please complete payment via the USSD prompt on your phone.' : 'See you there!'}`,
+        },
+      }).catch((err) => console.error('SMS error:', err));
 
       const registration: Registration = {
         id: regData.id,
