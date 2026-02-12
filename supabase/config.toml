@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.send-pending-sms]
 verify_jwt = false
+
+[functions.manage-roles]
+verify_jwt = false
