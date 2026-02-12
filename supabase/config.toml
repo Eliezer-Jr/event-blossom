@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.moolre-sms]
 verify_jwt = false
+
+[functions.moolre-webhook]
+verify_jwt = false

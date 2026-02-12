@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { mockEvents } from '@/data/mockData';
+import { useEvent } from '@/hooks/useEvents';
 import Navbar from '@/components/Navbar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -18,13 +18,25 @@ import { supabase } from '@/integrations/supabase/client';
 const EventDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const event = mockEvents.find((e) => e.id === id);
+  const { data: event, isLoading } = useEvent(id);
   const [showForm, setShowForm] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [ticketData, setTicketData] = useState<Registration | null>(null);
   const [selectedTicket, setSelectedTicket] = useState('');
   const [formData, setFormData] = useState({ name: '', email: '', phone: '' });
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen">
+        <Navbar />
+        <div className="container py-20 text-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
+          <p className="text-muted-foreground mt-2">Loading event...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!event) {
     return (
@@ -53,7 +65,6 @@ const EventDetail = () => {
     const isPaid = selectedTicketType.price > 0;
 
     try {
-      // Insert registration into database
       const { data: regData, error: regError } = await supabase
         .from('registrations')
         .insert({
@@ -72,7 +83,6 @@ const EventDetail = () => {
 
       if (regError) throw regError;
 
-      // If paid ticket, initiate Moolre payment
       if (isPaid) {
         const { data: paymentResult, error: paymentError } = await supabase.functions.invoke('moolre-payment', {
           body: {
@@ -94,7 +104,6 @@ const EventDetail = () => {
         }
       }
 
-      // Send SMS confirmation
       await supabase.functions.invoke('moolre-sms', {
         body: {
           recipients: formData.phone,
