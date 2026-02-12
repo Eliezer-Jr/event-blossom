@@ -36,6 +36,7 @@ Deno.serve(async (req) => {
         "X-API-VASKEY": MOOLRE_VAS_KEY,
       },
       body: JSON.stringify({
+        type: 1,
         senderid: sender_id,
         recipients: recipientList,
         message,
