@@ -5,4 +5,6 @@ export interface CustomField {
   required: boolean;
   placeholder?: string;
   options?: string[]; // for select type
+  /** Maps option value → override price. Used to auto-adjust ticket price based on selection. */
+  priceOverrides?: Record<string, number>;
 }
