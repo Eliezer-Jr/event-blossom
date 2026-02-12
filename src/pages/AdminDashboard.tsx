@@ -1,18 +1,19 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import { useRegistrations, DbRegistration } from '@/hooks/useRegistrations';
-import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Search, Users, DollarSign, Ticket, TrendingUp, Download, QrCode, Loader2 } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Search, Users, DollarSign, Ticket, TrendingUp, Download, QrCode, Loader2, PlusCircle, UserCheck } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { QRCodeSVG } from 'qrcode.react';
+import CreateEventForm from '@/components/admin/CreateEventForm';
+import CheckInScanner from '@/components/admin/CheckInScanner';
 
 const statusBadge: Record<string, string> = {
   confirmed: 'bg-success/10 text-success border-success/20',
@@ -84,11 +85,21 @@ const AdminDashboard = () => {
             <h1 className="font-heading text-3xl font-bold">Dashboard</h1>
             <p className="text-muted-foreground">Manage registrations across your events</p>
           </div>
-          <Button onClick={handleExport} variant="outline" className="gap-2">
-            <Download className="h-4 w-4" /> Export CSV
-          </Button>
         </div>
 
+        <Tabs defaultValue="registrations" className="space-y-6">
+          <TabsList>
+            <TabsTrigger value="registrations" className="gap-2"><Users className="h-4 w-4" /> Registrations</TabsTrigger>
+            <TabsTrigger value="create" className="gap-2"><PlusCircle className="h-4 w-4" /> Create Event</TabsTrigger>
+            <TabsTrigger value="checkin" className="gap-2"><UserCheck className="h-4 w-4" /> Check-In</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="registrations" className="space-y-6">
+            <div className="flex justify-end">
+              <Button onClick={handleExport} variant="outline" size="sm" className="gap-2">
+                <Download className="h-4 w-4" /> Export CSV
+              </Button>
+            </div>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {stats.map((stat, i) => (
             <motion.div
@@ -216,6 +227,16 @@ const AdminDashboard = () => {
             )}
           </CardContent>
         </Card>
+          </TabsContent>
+
+          <TabsContent value="create">
+            <CreateEventForm />
+          </TabsContent>
+
+          <TabsContent value="checkin">
+            <CheckInScanner />
+          </TabsContent>
+        </Tabs>
       </div>
 
       <Dialog open={!!selectedReg} onOpenChange={() => setSelectedReg(null)}>
