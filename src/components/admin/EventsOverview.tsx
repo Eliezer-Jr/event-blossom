@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import { useEvents } from '@/hooks/useEvents';
 import { useRegistrations, DbRegistration } from '@/hooks/useRegistrations';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -37,10 +40,23 @@ const paymentColors: Record<string, string> = {
 const EventsOverview = () => {
   const { data: events = [], isLoading } = useEvents();
   const { data: registrations = [] } = useRegistrations();
+  const queryClient = useQueryClient();
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [regSearch, setRegSearch] = useState('');
   const [regStatusFilter, setRegStatusFilter] = useState('all');
   const [regPaymentFilter, setRegPaymentFilter] = useState('all');
+
+  const updateRegistration = useMutation({
+    mutationFn: async ({ id, updates }: { id: string; updates: { status?: string; payment_status?: string } }) => {
+      const { error } = await supabase.from('registrations').update(updates).eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['registrations'] });
+      toast.success('Registration updated');
+    },
+    onError: () => toast.error('Failed to update registration'),
+  });
 
   const selectedEvent = events.find((e) => e.id === selectedEventId);
   const customFields: CustomField[] = (selectedEvent?.customFields as CustomField[]) || [];
@@ -326,10 +342,31 @@ const EventsOverview = () => {
                         <TableCell className="text-sm">{(reg.ticket_types as any)?.name || '—'}</TableCell>
                         <TableCell className="text-xs font-mono">{reg.ticket_id}</TableCell>
                         <TableCell>
-                          <Badge variant="outline" className={statusColors[reg.status] || ''}>{reg.status}</Badge>
+                          <Select value={reg.status} onValueChange={(v) => updateRegistration.mutate({ id: reg.id, updates: { status: v } })}>
+                            <SelectTrigger className="h-7 w-[120px] text-xs">
+                              <Badge variant="outline" className={statusColors[reg.status] || ''}>{reg.status}</Badge>
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="confirmed">Confirmed</SelectItem>
+                              <SelectItem value="pending">Pending</SelectItem>
+                              <SelectItem value="checked-in">Checked In</SelectItem>
+                              <SelectItem value="cancelled">Cancelled</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </TableCell>
                         <TableCell>
-                          <Badge variant="outline" className={paymentColors[reg.payment_status] || ''}>{reg.payment_status}</Badge>
+                          <Select value={reg.payment_status} onValueChange={(v) => updateRegistration.mutate({ id: reg.id, updates: { payment_status: v } })}>
+                            <SelectTrigger className="h-7 w-[110px] text-xs">
+                              <Badge variant="outline" className={paymentColors[reg.payment_status] || ''}>{reg.payment_status}</Badge>
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="paid">Paid</SelectItem>
+                              <SelectItem value="pending">Pending</SelectItem>
+                              <SelectItem value="free">Free</SelectItem>
+                              <SelectItem value="refunded">Refunded</SelectItem>
+                              <SelectItem value="failed">Failed</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </TableCell>
                         <TableCell className="text-right font-medium">
                           {reg.amount === 0 ? '—' : `GH₵${reg.amount.toLocaleString()}`}
