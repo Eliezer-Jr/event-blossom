@@ -314,7 +314,7 @@ const EventDetail = () => {
                     </CardHeader>
                     <CardContent>
                       <form onSubmit={handleSubmit} className="space-y-4">
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div className="grid grid-cols-2 gap-3">
                           <div>
                             <Label htmlFor="firstName">First Name</Label>
                             <Input
@@ -323,15 +323,6 @@ const EventDetail = () => {
                               maxLength={50}
                               value={formData.firstName}
                               onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                            />
-                          </div>
-                          <div>
-                            <Label htmlFor="middleName">Middle Name</Label>
-                            <Input
-                              id="middleName"
-                              maxLength={50}
-                              value={formData.middleName}
-                              onChange={(e) => setFormData({ ...formData, middleName: e.target.value })}
                             />
                           </div>
                           <div>
@@ -344,6 +335,15 @@ const EventDetail = () => {
                               onChange={(e) => setFormData({ ...formData, surname: e.target.value })}
                             />
                           </div>
+                        </div>
+                        <div>
+                          <Label htmlFor="middleName">Middle Name <span className="text-muted-foreground text-xs">(optional)</span></Label>
+                          <Input
+                            id="middleName"
+                            maxLength={50}
+                            value={formData.middleName}
+                            onChange={(e) => setFormData({ ...formData, middleName: e.target.value })}
+                          />
                         </div>
                         <div>
                           <Label htmlFor="email">Email</Label>
