@@ -1,11 +1,11 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Trash2, Loader2, FileText } from 'lucide-react';
+import { Plus, Trash2, Loader2, FileText, Upload, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
@@ -27,6 +27,9 @@ const CreateEventForm = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState({
     title: '',
     description: '',
@@ -36,7 +39,6 @@ const CreateEventForm = () => {
     capacity: '',
     category: 'General',
     organizer: '',
-    image_url: '',
   });
   const [tickets, setTickets] = useState<TicketTypeInput[]>([emptyTicket()]);
   const [customFields, setCustomFields] = useState<CustomField[]>([]);
@@ -59,6 +61,21 @@ const CreateEventForm = () => {
 
     setIsSubmitting(true);
     try {
+      let imageUrl: string | null = null;
+
+      if (imageFile) {
+        const fileExt = imageFile.name.split('.').pop();
+        const filePath = `${user.id}/${Date.now()}.${fileExt}`;
+        const { error: uploadError } = await supabase.storage
+          .from('event-images')
+          .upload(filePath, imageFile);
+        if (uploadError) throw uploadError;
+        const { data: urlData } = supabase.storage
+          .from('event-images')
+          .getPublicUrl(filePath);
+        imageUrl = urlData.publicUrl;
+      }
+
       const { data: event, error } = await supabase
         .from('events')
         .insert({
@@ -70,7 +87,7 @@ const CreateEventForm = () => {
           capacity: form.capacity ? parseInt(form.capacity) : 999999,
           category: form.category,
           organizer: form.organizer,
-          image_url: form.image_url || null,
+          image_url: imageUrl,
           user_id: user.id,
           custom_fields: customFields as any,
         })
@@ -92,7 +109,9 @@ const CreateEventForm = () => {
 
       toast.success('Event created successfully!');
       queryClient.invalidateQueries({ queryKey: ['events'] });
-      setForm({ title: '', description: '', date: '', time: '', venue: '', capacity: '', category: 'General', organizer: '', image_url: '' });
+      setForm({ title: '', description: '', date: '', time: '', venue: '', capacity: '', category: 'General', organizer: '' });
+      setImageFile(null);
+      setImagePreview(null);
       setTickets([emptyTicket()]);
       setCustomFields([]);
     } catch (err: any) {
@@ -172,8 +191,43 @@ const CreateEventForm = () => {
               <Input id="organizer" value={form.organizer} onChange={(e) => updateForm('organizer', e.target.value)} />
             </div>
             <div className="sm:col-span-2">
-              <Label htmlFor="image_url">Image URL (optional)</Label>
-              <Input id="image_url" type="url" value={form.image_url} onChange={(e) => updateForm('image_url', e.target.value)} />
+              <Label>Banner Image <span className="text-muted-foreground text-xs">(optional)</span></Label>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    setImageFile(file);
+                    setImagePreview(URL.createObjectURL(file));
+                  }
+                }}
+              />
+              {imagePreview ? (
+                <div className="relative mt-2 rounded-lg overflow-hidden border">
+                  <img src={imagePreview} alt="Preview" className="w-full h-40 object-cover" />
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="icon"
+                    className="absolute top-2 right-2 h-7 w-7"
+                    onClick={() => { setImageFile(null); setImagePreview(null); if (fileInputRef.current) fileInputRef.current.value = ''; }}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full mt-2 h-20 border-dashed"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <Upload className="h-5 w-5 mr-2" /> Upload Image
+                </Button>
+              )}
             </div>
           </div>
 

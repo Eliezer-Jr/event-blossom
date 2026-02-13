@@ -191,8 +191,11 @@ const EventDetail = () => {
     <div className="min-h-screen bg-background">
       <Navbar />
 
-      <div className="relative h-64 bg-gradient-to-br from-primary/20 via-accent/10 to-background flex items-end">
-        <div className="container pb-6">
+      <div className="relative h-64 bg-gradient-to-br from-primary/20 via-accent/10 to-background flex items-end overflow-hidden">
+        {event.imageUrl && (
+          <img src={event.imageUrl} alt={event.title} className="absolute inset-0 w-full h-full object-cover opacity-30" />
+        )}
+        <div className="container pb-6 relative z-10">
           <Button variant="ghost" size="sm" className="mb-4" onClick={() => navigate('/')}>
             <ArrowLeft className="mr-2 h-4 w-4" /> All Events
           </Button>
