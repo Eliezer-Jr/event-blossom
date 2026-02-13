@@ -36,7 +36,7 @@ const EventDetail = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [ticketData, setTicketData] = useState<Registration | null>(null);
   const [selectedTicket, setSelectedTicket] = useState('');
-  const [formData, setFormData] = useState({ name: '', email: '', phone: '' });
+  const [formData, setFormData] = useState({ firstName: '', middleName: '', surname: '', email: '', phone: '' });
   const [customValues, setCustomValues] = useState<Record<string, string | boolean>>({});
   const [phoneError, setPhoneError] = useState('');
 
@@ -110,7 +110,7 @@ const EventDetail = () => {
         .from('registrations')
         .insert({
           event_id: event.id,
-          name: formData.name,
+          name: [formData.firstName, formData.middleName, formData.surname].filter(Boolean).join(' '),
           email: formData.email,
           phone: normalizedPhone,
           ticket_type_id: selectedTicketType.id,
@@ -156,7 +156,7 @@ const EventDetail = () => {
       supabase.functions.invoke('moolre-sms', {
         body: {
           recipients: normalizedPhone,
-          message: `Hi ${formData.name}, your registration for "${event.title}" is ${isPaid ? 'pending payment' : 'confirmed'}. Ticket ID: ${ticketId}. ${isPaid ? 'Please complete payment via the USSD prompt on your phone.' : 'See you there!'}`,
+          message: `Hi ${formData.firstName}, your registration for "${event.title}" is ${isPaid ? 'pending payment' : 'confirmed'}. Ticket ID: ${ticketId}. ${isPaid ? 'Please complete payment via the USSD prompt on your phone.' : 'See you there!'}`,
         },
       }).catch((err) => console.error('SMS error:', err));
 
@@ -164,7 +164,7 @@ const EventDetail = () => {
         id: regData.id,
         eventId: event.id,
         eventTitle: event.title,
-        name: formData.name,
+        name: [formData.firstName, formData.middleName, formData.surname].filter(Boolean).join(' '),
         email: formData.email,
         phone: normalizedPhone,
         ticketType: selectedTicketType.name,
@@ -314,15 +314,36 @@ const EventDetail = () => {
                     </CardHeader>
                     <CardContent>
                       <form onSubmit={handleSubmit} className="space-y-4">
-                        <div>
-                          <Label htmlFor="name">Full Name</Label>
-                          <Input
-                            id="name"
-                            required
-                            maxLength={100}
-                            value={formData.name}
-                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                          />
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                          <div>
+                            <Label htmlFor="firstName">First Name</Label>
+                            <Input
+                              id="firstName"
+                              required
+                              maxLength={50}
+                              value={formData.firstName}
+                              onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="middleName">Middle Name</Label>
+                            <Input
+                              id="middleName"
+                              maxLength={50}
+                              value={formData.middleName}
+                              onChange={(e) => setFormData({ ...formData, middleName: e.target.value })}
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="surname">Surname</Label>
+                            <Input
+                              id="surname"
+                              required
+                              maxLength={50}
+                              value={formData.surname}
+                              onChange={(e) => setFormData({ ...formData, surname: e.target.value })}
+                            />
+                          </div>
                         </div>
                         <div>
                           <Label htmlFor="email">Email</Label>
