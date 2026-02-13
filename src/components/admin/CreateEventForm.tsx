@@ -21,7 +21,7 @@ interface TicketTypeInput {
   description: string;
 }
 
-const emptyTicket = (): TicketTypeInput => ({ name: '', price: '0', quantity: '50', description: '' });
+const emptyTicket = (): TicketTypeInput => ({ name: '', price: '0', quantity: '', description: '' });
 
 const CreateEventForm = () => {
   const { user } = useAuth();
@@ -83,7 +83,7 @@ const CreateEventForm = () => {
         event_id: event.id,
         name: t.name,
         price: parseInt(t.price) || 0,
-        quantity: parseInt(t.quantity) || 50,
+        quantity: t.quantity ? parseInt(t.quantity) : 999999,
         description: t.description || null,
       }));
 
@@ -194,9 +194,9 @@ const CreateEventForm = () => {
                   <Label>Price (GH₵)</Label>
                   <Input type="number" min="0" value={ticket.price} onChange={(e) => updateTicket(i, 'price', e.target.value)} />
                 </div>
-                <div>
-                  <Label>Quantity</Label>
-                  <Input type="number" min="1" value={ticket.quantity} onChange={(e) => updateTicket(i, 'quantity', e.target.value)} />
+                 <div>
+                  <Label>Quantity <span className="text-muted-foreground text-xs">(optional)</span></Label>
+                  <Input type="number" min="1" placeholder="Unlimited" value={ticket.quantity} onChange={(e) => updateTicket(i, 'quantity', e.target.value)} />
                 </div>
                 <div className="flex items-end">
                   {tickets.length > 1 && (
