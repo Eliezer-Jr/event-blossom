@@ -33,7 +33,7 @@ const CreateEventForm = () => {
     date: '',
     time: '',
     venue: '',
-    capacity: '100',
+    capacity: '',
     category: 'General',
     organizer: '',
     image_url: '',
@@ -67,7 +67,7 @@ const CreateEventForm = () => {
           date: form.date,
           time: form.time,
           venue: form.venue,
-          capacity: parseInt(form.capacity) || 100,
+          capacity: form.capacity ? parseInt(form.capacity) : 999999,
           category: form.category,
           organizer: form.organizer,
           image_url: form.image_url || null,
@@ -92,7 +92,7 @@ const CreateEventForm = () => {
 
       toast.success('Event created successfully!');
       queryClient.invalidateQueries({ queryKey: ['events'] });
-      setForm({ title: '', description: '', date: '', time: '', venue: '', capacity: '100', category: 'General', organizer: '', image_url: '' });
+      setForm({ title: '', description: '', date: '', time: '', venue: '', capacity: '', category: 'General', organizer: '', image_url: '' });
       setTickets([emptyTicket()]);
       setCustomFields([]);
     } catch (err: any) {
@@ -153,8 +153,8 @@ const CreateEventForm = () => {
               <Input id="venue" required value={form.venue} onChange={(e) => updateForm('venue', e.target.value)} />
             </div>
             <div>
-              <Label htmlFor="capacity">Capacity</Label>
-              <Input id="capacity" type="number" min="1" value={form.capacity} onChange={(e) => updateForm('capacity', e.target.value)} />
+              <Label htmlFor="capacity">Capacity <span className="text-muted-foreground text-xs">(optional)</span></Label>
+              <Input id="capacity" type="number" min="1" placeholder="Unlimited" value={form.capacity} onChange={(e) => updateForm('capacity', e.target.value)} />
             </div>
             <div>
               <Label htmlFor="category">Category</Label>
