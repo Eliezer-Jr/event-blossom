@@ -18,8 +18,9 @@ const statusColors: Record<string, string> = {
 };
 
 const EventCard = ({ event, index }: EventCardProps) => {
+  const isUnlimited = event.capacity >= 999999;
   const spotsLeft = event.capacity - event.registeredCount;
-  const fillPercent = Math.round((event.registeredCount / event.capacity) * 100);
+  const fillPercent = isUnlimited ? 0 : Math.round((event.registeredCount / event.capacity) * 100);
   const lowestPrice = Math.min(...event.ticketTypes.map((t) => t.price));
 
   return (
@@ -54,7 +55,7 @@ const EventCard = ({ event, index }: EventCardProps) => {
               </div>
               <div className="flex items-center gap-2">
                 <Users className="h-4 w-4 text-primary" />
-                <span>{spotsLeft > 0 ? `${spotsLeft} spots left` : 'Full'}</span>
+                <span>{isUnlimited ? `${event.registeredCount} registered` : spotsLeft > 0 ? `${spotsLeft} spots left` : 'Full'}</span>
               </div>
             </div>
 
@@ -62,15 +63,17 @@ const EventCard = ({ event, index }: EventCardProps) => {
               <span className="font-heading text-lg font-bold text-primary">
                 {lowestPrice === 0 ? 'Free' : `GH₵${lowestPrice.toLocaleString()}`}
               </span>
-              <div className="flex items-center gap-2">
-                <div className="h-2 w-20 rounded-full bg-muted overflow-hidden">
-                  <div
-                    className="h-full rounded-full bg-primary transition-all"
-                    style={{ width: `${fillPercent}%` }}
-                  />
+              {!isUnlimited && (
+                <div className="flex items-center gap-2">
+                  <div className="h-2 w-20 rounded-full bg-muted overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-primary transition-all"
+                      style={{ width: `${fillPercent}%` }}
+                    />
+                  </div>
+                  <span className="text-xs text-muted-foreground">{fillPercent}%</span>
                 </div>
-                <span className="text-xs text-muted-foreground">{fillPercent}%</span>
-              </div>
+              )}
             </div>
           </CardContent>
         </Card>
