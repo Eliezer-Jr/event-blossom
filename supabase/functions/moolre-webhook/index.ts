@@ -77,7 +77,19 @@ Deno.serve(async (req) => {
       if (MOOLRE_VAS_KEY) {
         try {
           const eventTitle = (registration as any).events?.title || "your event";
-          await fetch("https://api.moolre.com/open/sms/send", {
+
+          // Fetch ticket type name for the SMS
+          let ticketTypeName = "Standard";
+          const { data: ticketType } = await supabase
+            .from("ticket_types")
+            .select("name")
+            .eq("id", registration.ticket_type_id)
+            .single();
+          if (ticketType) ticketTypeName = ticketType.name;
+
+          const smsMessage = `Payment confirmed! Hi ${registration.name}, your registration for "${eventTitle}" is confirmed.\nTicket ID: ${registration.ticket_id}\nTicket Type: ${ticketTypeName}\nAmount: GH₵${registration.amount.toLocaleString()}\nSee you there!`;
+
+          const smsResponse = await fetch("https://api.moolre.com/open/sms/send", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -86,13 +98,21 @@ Deno.serve(async (req) => {
             body: JSON.stringify({
               type: 1,
               senderid: "BaptistConf",
-              recipients: [registration.phone],
-              message: `Payment confirmed! Your registration for "${eventTitle}" is now confirmed. Ticket ID: ${registration.ticket_id}. See you there!`,
+              messages: [{
+                recipient: registration.phone,
+                message: smsMessage,
+                ref: `payment-confirmed-${registration.id}-${Date.now()}`,
+              }],
             }),
           });
+          console.log("SMS response status:", smsResponse.status);
+          const smsText = await smsResponse.text();
+          console.log("SMS response body:", smsText);
         } catch (smsError) {
           console.error("SMS notification failed:", smsError);
         }
+      } else {
+        console.warn("MOOLRE_VAS_KEY not configured — skipping SMS");
       }
     }
 
