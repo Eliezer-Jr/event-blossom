@@ -17,9 +17,14 @@ RUN npm run build
 # Stage 2: Serve
 FROM nginx:alpine
 
+RUN apk add --no-cache bash gettext
+
 COPY --from=builder /app/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY nginx.conf.template /etc/nginx/templates/default.conf.template
 
-EXPOSE 80
+RUN mkdir -p /var/www/certbot
+
+EXPOSE 80 443
 
 CMD ["nginx", "-g", "daemon off;"]
