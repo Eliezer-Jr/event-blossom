@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useEvent } from '@/hooks/useEvents';
 import Navbar from '@/components/Navbar';
 import { Button } from '@/components/ui/button';
@@ -10,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { CalendarDays, MapPin, Users, Clock, ArrowLeft, Ticket, CheckCircle2, Loader2 } from 'lucide-react';
+import { CalendarDays, MapPin, Users, Clock, ArrowLeft, Ticket, CheckCircle2, Loader2, ChevronDown, ChevronUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import TicketCard from '@/components/TicketCard';
 import { Registration } from '@/types/event';
@@ -39,6 +40,7 @@ const EventDetail = () => {
   const [formData, setFormData] = useState({ name: '', email: '', phone: '' });
   const [customValues, setCustomValues] = useState<Record<string, string | boolean>>({});
   const [phoneError, setPhoneError] = useState('');
+  const [showPersonalInfo, setShowPersonalInfo] = useState(false);
 
   if (isLoading) {
     return (
@@ -92,8 +94,16 @@ const EventDetail = () => {
     e.preventDefault();
     if (!selectedTicketType || isSubmitting) return;
 
+    // Validate personal info - expand section if missing
+    if (!formData.name || !formData.email || !formData.phone) {
+      setShowPersonalInfo(true);
+      toast.error('Please fill in your personal information');
+      return;
+    }
+
     const { normalized, error: phoneErr } = normalizeGhanaPhone(formData.phone);
     if (phoneErr || !normalized) {
+      setShowPersonalInfo(true);
       setPhoneError(phoneErr || 'Invalid phone number');
       return;
     }
@@ -321,48 +331,58 @@ const EventDetail = () => {
                     </CardHeader>
                     <CardContent>
                       <form onSubmit={handleSubmit} className="space-y-4">
-                        <div>
-                          <Label htmlFor="name">Full Name</Label>
-                          <Input
-                            id="name"
-                            required
-                            maxLength={100}
-                            value={formData.name}
-                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="email">Email</Label>
-                          <Input
-                            id="email"
-                            type="email"
-                            required
-                            maxLength={255}
-                            value={formData.email}
-                            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="phone">Phone</Label>
-                          <Input
-                            id="phone"
-                            required
-                            maxLength={20}
-                            placeholder="233XXXXXXXXX"
-                            value={formData.phone}
-                            onChange={(e) => {
-                              setFormData({ ...formData, phone: e.target.value });
-                              if (phoneError) setPhoneError('');
-                            }}
-                            onBlur={() => {
-                              if (formData.phone) {
-                                const { error } = normalizeGhanaPhone(formData.phone);
-                                setPhoneError(error || '');
-                              }
-                            }}
-                          />
-                          {phoneError && <p className="text-sm text-destructive mt-1">{phoneError}</p>}
-                        </div>
+                        <Collapsible open={showPersonalInfo} onOpenChange={setShowPersonalInfo}>
+                          <CollapsibleTrigger asChild>
+                            <Button type="button" variant="ghost" className="w-full flex items-center justify-between px-2 py-1 text-sm text-muted-foreground hover:text-foreground">
+                              <span>Personal Information</span>
+                              {showPersonalInfo ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                            </Button>
+                          </CollapsibleTrigger>
+                          <CollapsibleContent className="space-y-4 pt-2">
+                            <div>
+                              <Label htmlFor="name">Full Name</Label>
+                              <Input
+                                id="name"
+                                required
+                                maxLength={100}
+                                value={formData.name}
+                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor="email">Email</Label>
+                              <Input
+                                id="email"
+                                type="email"
+                                required
+                                maxLength={255}
+                                value={formData.email}
+                                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor="phone">Phone</Label>
+                              <Input
+                                id="phone"
+                                required
+                                maxLength={20}
+                                placeholder="233XXXXXXXXX"
+                                value={formData.phone}
+                                onChange={(e) => {
+                                  setFormData({ ...formData, phone: e.target.value });
+                                  if (phoneError) setPhoneError('');
+                                }}
+                                onBlur={() => {
+                                  if (formData.phone) {
+                                    const { error } = normalizeGhanaPhone(formData.phone);
+                                    setPhoneError(error || '');
+                                  }
+                                }}
+                              />
+                              {phoneError && <p className="text-sm text-destructive mt-1">{phoneError}</p>}
+                            </div>
+                          </CollapsibleContent>
+                        </Collapsible>
                         <div>
                           <Label>Ticket Type</Label>
                           <Select value={selectedTicket} onValueChange={setSelectedTicket}>
