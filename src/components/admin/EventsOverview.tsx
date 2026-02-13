@@ -8,8 +8,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { CalendarDays, MapPin, Users, DollarSign, Ticket, TrendingUp, BarChart3, Search, X, Eye } from 'lucide-react';
+import { CalendarDays, MapPin, Users, DollarSign, Ticket, TrendingUp, BarChart3, Search, X, Eye, Download } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { CustomField } from '@/types/customField';
 
 const statusBadge: Record<string, string> = {
   upcoming: 'bg-primary/10 text-primary border-primary/20',
@@ -42,6 +43,7 @@ const EventsOverview = () => {
   const [regPaymentFilter, setRegPaymentFilter] = useState('all');
 
   const selectedEvent = events.find((e) => e.id === selectedEventId);
+  const customFields: CustomField[] = (selectedEvent?.customFields as CustomField[]) || [];
   const eventRegs = registrations.filter((r) => r.event_id === selectedEventId);
   const filteredRegs = eventRegs.filter((r) => {
     const matchSearch =
@@ -53,6 +55,40 @@ const EventsOverview = () => {
     const matchPayment = regPaymentFilter === 'all' || r.payment_status === regPaymentFilter;
     return matchSearch && matchStatus && matchPayment;
   });
+
+  const getCustomValue = (reg: any, fieldId: string) => {
+    const vals = reg.custom_field_values;
+    if (!vals || typeof vals !== 'object') return '—';
+    const v = vals[fieldId];
+    if (v === undefined || v === null || v === '') return '—';
+    if (typeof v === 'boolean') return v ? 'Yes' : 'No';
+    return String(v);
+  };
+
+  const handleExportEventCsv = () => {
+    if (!selectedEvent) return;
+    const baseHeaders = ['Name', 'Email', 'Phone', 'Ticket Type', 'Ticket ID', 'Status', 'Payment', 'Amount', 'Registered', 'Checked In'];
+    const cfHeaders = customFields.map((f) => f.label);
+    const headers = [...baseHeaders, ...cfHeaders];
+    const rows = filteredRegs.map((r) => {
+      const base = [
+        r.name, r.email, r.phone || '', (r.ticket_types as any)?.name || '', r.ticket_id,
+        r.status, r.payment_status, r.amount,
+        new Date(r.created_at).toLocaleDateString(),
+        r.checked_in_at ? new Date(r.checked_in_at).toLocaleString() : '',
+      ];
+      const cfVals = customFields.map((f) => getCustomValue(r, f.id));
+      return [...base, ...cfVals];
+    });
+    const escapeCsv = (v: any) => `"${String(v).replace(/"/g, '""')}"`;
+    const csv = [headers.map(escapeCsv).join(','), ...rows.map((r) => r.map(escapeCsv).join(','))].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${selectedEvent.title.replace(/[^a-zA-Z0-9]/g, '_')}_registrations.csv`;
+    a.click();
+  };
 
   const totalEvents = events.length;
   const totalCapacity = events.reduce((s, e) => s + e.capacity, 0);
@@ -220,7 +256,7 @@ const EventsOverview = () => {
       </Card>
 
       <Sheet open={!!selectedEventId} onOpenChange={(open) => !open && setSelectedEventId(null)}>
-        <SheetContent className="sm:max-w-2xl w-full overflow-y-auto">
+        <SheetContent className="sm:max-w-3xl w-full overflow-y-auto">
           <SheetHeader>
             <SheetTitle className="font-heading">{selectedEvent?.title} — Registrations ({eventRegs.length})</SheetTitle>
           </SheetHeader>
@@ -250,6 +286,9 @@ const EventsOverview = () => {
                   <SelectItem value="refunded">Refunded</SelectItem>
                 </SelectContent>
               </Select>
+              <Button onClick={handleExportEventCsv} variant="outline" size="sm" className="gap-2 shrink-0">
+                <Download className="h-4 w-4" /> Export CSV
+              </Button>
             </div>
 
             <p className="text-sm text-muted-foreground">{filteredRegs.length} registrant(s)</p>
@@ -266,6 +305,9 @@ const EventsOverview = () => {
                     <TableHead>Status</TableHead>
                     <TableHead>Payment</TableHead>
                     <TableHead className="text-right">Amount</TableHead>
+                    {customFields.map((cf) => (
+                      <TableHead key={cf.id}>{cf.label}</TableHead>
+                    ))}
                     <TableHead>Registered</TableHead>
                     <TableHead>Checked In</TableHead>
                   </TableRow>
@@ -273,7 +315,7 @@ const EventsOverview = () => {
                 <TableBody>
                   {filteredRegs.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={10} className="text-center py-6 text-muted-foreground">No registrations found</TableCell>
+                      <TableCell colSpan={10 + customFields.length} className="text-center py-6 text-muted-foreground">No registrations found</TableCell>
                     </TableRow>
                   ) : (
                     filteredRegs.map((reg) => (
@@ -292,6 +334,9 @@ const EventsOverview = () => {
                         <TableCell className="text-right font-medium">
                           {reg.amount === 0 ? '—' : `GH₵${reg.amount.toLocaleString()}`}
                         </TableCell>
+                        {customFields.map((cf) => (
+                          <TableCell key={cf.id} className="text-sm">{getCustomValue(reg, cf.id)}</TableCell>
+                        ))}
                         <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
                           {new Date(reg.created_at).toLocaleDateString()}
                         </TableCell>

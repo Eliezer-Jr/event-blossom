@@ -15,6 +15,7 @@ export interface DbRegistration {
   amount: number;
   created_at: string;
   checked_in_at: string | null;
+  custom_field_values: any;
   events?: { title: string } | null;
   ticket_types?: { name: string } | null;
 }
