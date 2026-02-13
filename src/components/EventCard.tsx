@@ -31,8 +31,12 @@ const EventCard = ({ event, index }: EventCardProps) => {
     >
       <Link to={`/event/${event.id}`}>
         <Card className="group overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 border-border/50">
-          <div className="relative h-48 bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
-            <CalendarDays className="h-16 w-16 text-primary/30" />
+          <div className="relative h-48 bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center overflow-hidden">
+            {event.imageUrl ? (
+              <img src={event.imageUrl} alt={event.title} className="w-full h-full object-cover" />
+            ) : (
+              <CalendarDays className="h-16 w-16 text-primary/30" />
+            )}
             <Badge className={`absolute top-3 right-3 ${statusColors[event.status]}`}>
               {event.status === 'sold-out' ? 'Sold Out' : event.status.charAt(0).toUpperCase() + event.status.slice(1)}
             </Badge>
