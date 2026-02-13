@@ -209,28 +209,28 @@ const EventDetail = () => {
                 <h2 className="font-heading text-xl font-bold mb-3">About This Event</h2>
                 <p className="text-muted-foreground leading-relaxed">{event.description}</p>
 
-                <div className="mt-6 grid gap-4 sm:grid-cols-2">
-                  <div className="flex items-center gap-3 p-3 rounded-lg bg-secondary">
-                    <CalendarDays className="h-5 w-5 text-primary" />
+                <div className="mt-6 grid gap-3 sm:grid-cols-3">
+                  <div className="flex items-center gap-3 p-4 rounded-lg bg-secondary">
+                    <CalendarDays className="h-5 w-5 text-primary shrink-0" />
                     <div>
-                      <p className="text-sm font-medium">Date</p>
-                      <p className="text-sm text-muted-foreground">
-                        {new Date(event.date).toLocaleDateString('en-NG', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+                      <p className="text-xs font-medium text-muted-foreground">Date</p>
+                      <p className="text-sm font-semibold">
+                        {new Date(event.date).toLocaleDateString('en-NG', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3 p-3 rounded-lg bg-secondary">
-                    <Clock className="h-5 w-5 text-primary" />
+                  <div className="flex items-center gap-3 p-4 rounded-lg bg-secondary">
+                    <Clock className="h-5 w-5 text-primary shrink-0" />
                     <div>
-                      <p className="text-sm font-medium">Time</p>
-                      <p className="text-sm text-muted-foreground">{event.time}</p>
+                      <p className="text-xs font-medium text-muted-foreground">Time</p>
+                      <p className="text-sm font-semibold">{event.time}</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3 p-3 rounded-lg bg-secondary">
-                    <MapPin className="h-5 w-5 text-primary" />
+                  <div className="flex items-center gap-3 p-4 rounded-lg bg-secondary">
+                    <MapPin className="h-5 w-5 text-primary shrink-0" />
                     <div>
-                      <p className="text-sm font-medium">Venue</p>
-                      <p className="text-sm text-muted-foreground">{event.venue}</p>
+                      <p className="text-xs font-medium text-muted-foreground">Venue</p>
+                      <p className="text-sm font-semibold">{event.venue}</p>
                     </div>
                   </div>
                 </div>
