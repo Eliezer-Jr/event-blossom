@@ -233,13 +233,6 @@ const EventDetail = () => {
                       <p className="text-sm text-muted-foreground">{event.venue}</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3 p-3 rounded-lg bg-secondary">
-                    <Users className="h-5 w-5 text-primary" />
-                    <div>
-                      <p className="text-sm font-medium">Capacity</p>
-                      <p className="text-sm text-muted-foreground">{spotsLeft} of {event.capacity} spots left</p>
-                    </div>
-                  </div>
                 </div>
               </CardContent>
             </Card>
