@@ -250,18 +250,22 @@ const EventDetail = () => {
               {event.ticketTypes.map((ticket) => {
                 const ticketUnlimited = ticket.quantity >= 999999;
                 const available = ticket.quantity - ticket.sold;
+                const isExpired = ticket.endsAt ? new Date(ticket.endsAt) < new Date() : false;
+                const isDisabled = isExpired || (!ticketUnlimited && available === 0);
                 return (
                   <div
                     key={ticket.id}
                     className={`flex items-center justify-between p-4 rounded-lg border transition-colors ${
                       selectedTicket === ticket.id ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'
-                    } ${!ticketUnlimited && available === 0 ? 'opacity-50' : 'cursor-pointer'}`}
-                    onClick={() => (ticketUnlimited || available > 0) && setSelectedTicket(ticket.id)}
+                    } ${isDisabled ? 'opacity-50' : 'cursor-pointer'}`}
+                    onClick={() => !isDisabled && setSelectedTicket(ticket.id)}
                   >
                     <div>
                       <p className="font-medium">{ticket.name}</p>
                       {ticket.description && <p className="text-sm text-muted-foreground">{ticket.description}</p>}
-                      <p className="text-xs text-muted-foreground mt-1">{ticketUnlimited ? 'Unlimited' : `${available} available`}</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {isExpired ? 'Sales ended' : ticketUnlimited ? 'Unlimited' : `${available} available`}
+                      </p>
                     </div>
                     <div className="text-right">
                       <p className="font-heading text-lg font-bold text-primary">

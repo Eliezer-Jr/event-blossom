@@ -24,6 +24,7 @@ export interface TicketType {
   quantity: number;
   sold: number;
   description?: string;
+  endsAt?: string;
 }
 
 export interface Registration {

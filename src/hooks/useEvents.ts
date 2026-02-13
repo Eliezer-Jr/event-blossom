@@ -34,6 +34,7 @@ export const useEvents = () => {
           quantity: t.quantity,
           sold: t.sold,
           description: t.description || undefined,
+          endsAt: t.ends_at || undefined,
         })),
       }));
     },
@@ -75,6 +76,7 @@ export const useEvent = (id: string | undefined) => {
           quantity: t.quantity,
           sold: t.sold,
           description: t.description || undefined,
+          endsAt: t.ends_at || undefined,
         })),
       };
     },

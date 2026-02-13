@@ -19,9 +19,10 @@ interface TicketTypeInput {
   price: string;
   quantity: string;
   description: string;
+  endsAt: string;
 }
 
-const emptyTicket = (): TicketTypeInput => ({ name: '', price: '0', quantity: '', description: '' });
+const emptyTicket = (): TicketTypeInput => ({ name: '', price: '0', quantity: '', description: '', endsAt: '' });
 
 const CreateEventForm = () => {
   const { user } = useAuth();
@@ -102,6 +103,7 @@ const CreateEventForm = () => {
         price: parseInt(t.price) || 0,
         quantity: t.quantity ? parseInt(t.quantity) : 999999,
         description: t.description || null,
+        ends_at: t.endsAt ? new Date(t.endsAt).toISOString() : null,
       }));
 
       const { error: ticketError } = await supabase.from('ticket_types').insert(ticketInserts);
@@ -239,7 +241,7 @@ const CreateEventForm = () => {
               </Button>
             </div>
             {tickets.map((ticket, i) => (
-              <div key={i} className="grid gap-3 sm:grid-cols-4 p-4 rounded-lg border bg-secondary/30">
+              <div key={i} className="grid gap-3 sm:grid-cols-5 p-4 rounded-lg border bg-secondary/30">
                 <div>
                   <Label>Name</Label>
                   <Input placeholder="e.g. Regular" value={ticket.name} onChange={(e) => updateTicket(i, 'name', e.target.value)} />
@@ -251,6 +253,10 @@ const CreateEventForm = () => {
                  <div>
                   <Label>Quantity <span className="text-muted-foreground text-xs">(optional)</span></Label>
                   <Input type="number" min="1" placeholder="Unlimited" value={ticket.quantity} onChange={(e) => updateTicket(i, 'quantity', e.target.value)} />
+                </div>
+                <div>
+                  <Label>Ends On <span className="text-muted-foreground text-xs">(optional)</span></Label>
+                  <Input type="date" value={ticket.endsAt} onChange={(e) => updateTicket(i, 'endsAt', e.target.value)} />
                 </div>
                 <div className="flex items-end">
                   {tickets.length > 1 && (
