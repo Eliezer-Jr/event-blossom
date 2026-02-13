@@ -66,6 +66,7 @@ const EventDetail = () => {
     );
   }
 
+  const isUnlimited = event.capacity >= 999999;
   const spotsLeft = event.capacity - event.registeredCount;
   const selectedTicketType = event.ticketTypes.find((t) => t.id === selectedTicket);
 
@@ -244,19 +245,20 @@ const EventDetail = () => {
             </CardHeader>
             <CardContent className="space-y-3">
               {event.ticketTypes.map((ticket) => {
+                const ticketUnlimited = ticket.quantity >= 999999;
                 const available = ticket.quantity - ticket.sold;
                 return (
                   <div
                     key={ticket.id}
                     className={`flex items-center justify-between p-4 rounded-lg border transition-colors ${
                       selectedTicket === ticket.id ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'
-                    } ${available === 0 ? 'opacity-50' : 'cursor-pointer'}`}
-                    onClick={() => available > 0 && setSelectedTicket(ticket.id)}
+                    } ${!ticketUnlimited && available === 0 ? 'opacity-50' : 'cursor-pointer'}`}
+                    onClick={() => (ticketUnlimited || available > 0) && setSelectedTicket(ticket.id)}
                   >
                     <div>
                       <p className="font-medium">{ticket.name}</p>
                       {ticket.description && <p className="text-sm text-muted-foreground">{ticket.description}</p>}
-                      <p className="text-xs text-muted-foreground mt-1">{available} available</p>
+                      <p className="text-xs text-muted-foreground mt-1">{ticketUnlimited ? 'Unlimited' : `${available} available`}</p>
                     </div>
                     <div className="text-right">
                       <p className="font-heading text-lg font-bold text-primary">
@@ -293,17 +295,19 @@ const EventDetail = () => {
                       <Ticket className="h-10 w-10 text-primary mx-auto" />
                       <h3 className="font-heading text-xl font-bold">Ready to attend?</h3>
                       <p className="text-sm text-muted-foreground">
-                        {spotsLeft > 0
-                          ? `Secure your spot — ${spotsLeft} remaining`
-                          : 'This event is fully booked'}
+                        {isUnlimited
+                          ? `${event.registeredCount} registered`
+                          : spotsLeft > 0
+                            ? `Secure your spot — ${spotsLeft} remaining`
+                            : 'This event is fully booked'}
                       </p>
                       <Button
                         className="w-full"
                         size="lg"
-                        disabled={spotsLeft === 0}
+                        disabled={!isUnlimited && spotsLeft === 0}
                         onClick={() => setShowForm(true)}
                       >
-                        {spotsLeft > 0 ? 'Register Now' : 'Sold Out'}
+                        {isUnlimited || spotsLeft > 0 ? 'Register Now' : 'Sold Out'}
                       </Button>
                     </CardContent>
                   </Card>
