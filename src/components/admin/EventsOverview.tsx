@@ -1,9 +1,14 @@
+import { useState } from 'react';
 import { useEvents } from '@/hooks/useEvents';
-import { useRegistrations } from '@/hooks/useRegistrations';
+import { useRegistrations, DbRegistration } from '@/hooks/useRegistrations';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { CalendarDays, MapPin, Users, DollarSign, Ticket, TrendingUp, BarChart3 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { CalendarDays, MapPin, Users, DollarSign, Ticket, TrendingUp, BarChart3, Search, X, Eye } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const statusBadge: Record<string, string> = {
@@ -13,9 +18,41 @@ const statusBadge: Record<string, string> = {
   'sold-out': 'bg-destructive/10 text-destructive border-destructive/20',
 };
 
+const statusColors: Record<string, string> = {
+  confirmed: 'bg-success/10 text-success border-success/20',
+  pending: 'bg-warning/10 text-warning border-warning/20',
+  cancelled: 'bg-destructive/10 text-destructive border-destructive/20',
+  'checked-in': 'bg-primary/10 text-primary border-primary/20',
+};
+
+const paymentColors: Record<string, string> = {
+  paid: 'bg-success/10 text-success border-success/20',
+  pending: 'bg-warning/10 text-warning border-warning/20',
+  free: 'bg-secondary text-secondary-foreground',
+  refunded: 'bg-muted text-muted-foreground',
+  failed: 'bg-destructive/10 text-destructive border-destructive/20',
+};
+
 const EventsOverview = () => {
   const { data: events = [], isLoading } = useEvents();
   const { data: registrations = [] } = useRegistrations();
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+  const [regSearch, setRegSearch] = useState('');
+  const [regStatusFilter, setRegStatusFilter] = useState('all');
+  const [regPaymentFilter, setRegPaymentFilter] = useState('all');
+
+  const selectedEvent = events.find((e) => e.id === selectedEventId);
+  const eventRegs = registrations.filter((r) => r.event_id === selectedEventId);
+  const filteredRegs = eventRegs.filter((r) => {
+    const matchSearch =
+      r.name.toLowerCase().includes(regSearch.toLowerCase()) ||
+      r.email.toLowerCase().includes(regSearch.toLowerCase()) ||
+      r.ticket_id.toLowerCase().includes(regSearch.toLowerCase()) ||
+      (r.phone || '').toLowerCase().includes(regSearch.toLowerCase());
+    const matchStatus = regStatusFilter === 'all' || r.status === regStatusFilter;
+    const matchPayment = regPaymentFilter === 'all' || r.payment_status === regPaymentFilter;
+    return matchSearch && matchStatus && matchPayment;
+  });
 
   const totalEvents = events.length;
   const totalCapacity = events.reduce((s, e) => s + e.capacity, 0);
@@ -97,12 +134,13 @@ const EventsOverview = () => {
                     <TableHead className="text-right">Occupancy</TableHead>
                     <TableHead>Tickets</TableHead>
                     <TableHead>Organizer</TableHead>
+                    <TableHead></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {events.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={13} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={14} className="text-center py-8 text-muted-foreground">
                         No events found
                       </TableCell>
                     </TableRow>
@@ -114,7 +152,7 @@ const EventsOverview = () => {
                       const occupancy = event.capacity > 0 ? Math.round((event.registeredCount / event.capacity) * 100) : 0;
 
                       return (
-                        <TableRow key={event.id}>
+                        <TableRow key={event.id} className="cursor-pointer hover:bg-muted/50" onClick={() => { setSelectedEventId(event.id); setRegSearch(''); setRegStatusFilter('all'); setRegPaymentFilter('all'); }}>
                           <TableCell>
                             <p className="font-medium">{event.title}</p>
                           </TableCell>
@@ -165,6 +203,11 @@ const EventsOverview = () => {
                             </div>
                           </TableCell>
                           <TableCell className="text-sm text-muted-foreground">{event.organizer || '—'}</TableCell>
+                          <TableCell>
+                            <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); setSelectedEventId(event.id); }}>
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
                         </TableRow>
                       );
                     })
@@ -175,6 +218,95 @@ const EventsOverview = () => {
           )}
         </CardContent>
       </Card>
+
+      <Sheet open={!!selectedEventId} onOpenChange={(open) => !open && setSelectedEventId(null)}>
+        <SheetContent className="sm:max-w-2xl w-full overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle className="font-heading">{selectedEvent?.title} — Registrations ({eventRegs.length})</SheetTitle>
+          </SheetHeader>
+          <div className="mt-4 space-y-4">
+            <div className="flex flex-col sm:flex-row gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input placeholder="Search name, email, phone, ticket…" className="pl-9" value={regSearch} onChange={(e) => setRegSearch(e.target.value)} />
+              </div>
+              <Select value={regStatusFilter} onValueChange={setRegStatusFilter}>
+                <SelectTrigger className="w-[140px]"><SelectValue placeholder="Status" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="confirmed">Confirmed</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="checked-in">Checked In</SelectItem>
+                  <SelectItem value="cancelled">Cancelled</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={regPaymentFilter} onValueChange={setRegPaymentFilter}>
+                <SelectTrigger className="w-[140px]"><SelectValue placeholder="Payment" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Payment</SelectItem>
+                  <SelectItem value="paid">Paid</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="free">Free</SelectItem>
+                  <SelectItem value="refunded">Refunded</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <p className="text-sm text-muted-foreground">{filteredRegs.length} registrant(s)</p>
+
+            <div className="rounded-lg border overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Phone</TableHead>
+                    <TableHead>Ticket</TableHead>
+                    <TableHead>Ticket ID</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Payment</TableHead>
+                    <TableHead className="text-right">Amount</TableHead>
+                    <TableHead>Registered</TableHead>
+                    <TableHead>Checked In</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredRegs.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={10} className="text-center py-6 text-muted-foreground">No registrations found</TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredRegs.map((reg) => (
+                      <TableRow key={reg.id}>
+                        <TableCell className="font-medium">{reg.name}</TableCell>
+                        <TableCell className="text-sm">{reg.email}</TableCell>
+                        <TableCell className="text-sm">{reg.phone || '—'}</TableCell>
+                        <TableCell className="text-sm">{(reg.ticket_types as any)?.name || '—'}</TableCell>
+                        <TableCell className="text-xs font-mono">{reg.ticket_id}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className={statusColors[reg.status] || ''}>{reg.status}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className={paymentColors[reg.payment_status] || ''}>{reg.payment_status}</Badge>
+                        </TableCell>
+                        <TableCell className="text-right font-medium">
+                          {reg.amount === 0 ? '—' : `GH₵${reg.amount.toLocaleString()}`}
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                          {new Date(reg.created_at).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                          {reg.checked_in_at ? new Date(reg.checked_in_at).toLocaleString() : '—'}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 };
