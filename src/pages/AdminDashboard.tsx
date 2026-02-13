@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Search, Users, DollarSign, Ticket, TrendingUp, Download, QrCode, Loader2, PlusCircle, UserCheck, Calendar, Send, ShieldCheck } from 'lucide-react';
+import { Search, Users, DollarSign, Ticket, TrendingUp, Download, QrCode, Loader2, PlusCircle, UserCheck, Calendar, Send, ShieldCheck, Eye, EyeOff } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { QRCodeSVG } from 'qrcode.react';
@@ -43,6 +43,7 @@ const AdminDashboard = () => {
   const [selectedReg, setSelectedReg] = useState<DbRegistration | null>(null);
   const [isSendingSms, setIsSendingSms] = useState(false);
   const [selectedEventForSms, setSelectedEventForSms] = useState('');
+  const [showPii, setShowPii] = useState(false);
   const { data: registrations = [], isLoading } = useRegistrations();
   const { data: events = [] } = useEvents();
   const { hasRole, roles } = useAuth();
@@ -162,6 +163,10 @@ const AdminDashboard = () => {
               <Button onClick={handleExport} variant="outline" size="sm" className="gap-2">
                 <Download className="h-4 w-4" /> Export CSV
               </Button>
+              <Button onClick={() => setShowPii(!showPii)} variant="outline" size="sm" className="gap-2">
+                {showPii ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                {showPii ? 'Hide PII' : 'Show PII'}
+              </Button>
             </div>
         {canSeeFinance && (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -238,8 +243,8 @@ const AdminDashboard = () => {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead className="hidden md:table-cell">Event</TableHead>
+                      {showPii && <TableHead>Name</TableHead>}
+                      <TableHead className={showPii ? "hidden md:table-cell" : ""}>Event</TableHead>
                       <TableHead>Ticket</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead className="hidden sm:table-cell">Payment</TableHead>
@@ -250,20 +255,23 @@ const AdminDashboard = () => {
                   <TableBody>
                     {filtered.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={showPii ? 7 : 6} className="text-center py-8 text-muted-foreground">
                           No registrations found
                         </TableCell>
                       </TableRow>
                     ) : (
                       filtered.map((reg) => (
                         <TableRow key={reg.id} className="cursor-pointer hover:bg-muted/50" onClick={() => setSelectedReg(reg)}>
-                          <TableCell>
-                            <div>
-                              <p className="font-medium">{reg.name}</p>
-                              <p className="text-xs text-muted-foreground">{reg.email}</p>
-                            </div>
-                          </TableCell>
-                          <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
+                          {showPii && (
+                            <TableCell>
+                              <div>
+                                <p className="font-medium">{reg.name}</p>
+                                <p className="text-xs text-muted-foreground">{reg.email}</p>
+                                {reg.phone && <p className="text-xs text-muted-foreground">{reg.phone}</p>}
+                              </div>
+                            </TableCell>
+                          )}
+                          <TableCell className={showPii ? "hidden md:table-cell text-sm text-muted-foreground" : "text-sm text-muted-foreground"}>
                             {(reg.events as any)?.title || '—'}
                           </TableCell>
                           <TableCell>
