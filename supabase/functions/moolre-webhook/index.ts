@@ -15,7 +15,9 @@ Deno.serve(async (req) => {
     const payload = await req.json();
     console.log("Moolre webhook payload:", JSON.stringify(payload));
 
-    const { reference, status, transaction_id, amount } = payload;
+    const status = payload.status ?? payload.data?.txstatus;
+    const reference = payload.data?.externalref || payload.reference;
+    const transaction_id = payload.data?.transactionid || payload.transaction_id;
 
     if (!reference && !transaction_id) {
       return new Response(
