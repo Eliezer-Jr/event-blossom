@@ -4,7 +4,7 @@ set -e
 DOMAIN=$1
 
 if [ -z "$DOMAIN" ]; then
-  echo "Usage: ./init-ssl.sh yourdomain.com"
+  echo "Usage: ./init-ssl.sh events.ghanabaptistministers.com"
   exit 1
 fi
 
