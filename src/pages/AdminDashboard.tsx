@@ -41,6 +41,7 @@ const AdminDashboard = () => {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [paymentFilter, setPaymentFilter] = useState('all');
+  const [eventFilter, setEventFilter] = useState('all');
   const [selectedReg, setSelectedReg] = useState<DbRegistration | null>(null);
   const [isSendingSms, setIsSendingSms] = useState(false);
   const [selectedEventForSms, setSelectedEventForSms] = useState('');
@@ -71,7 +72,8 @@ const AdminDashboard = () => {
       r.ticket_id.toLowerCase().includes(search.toLowerCase());
     const matchesStatus = statusFilter === 'all' || r.status === statusFilter;
     const matchesPayment = paymentFilter === 'all' || r.payment_status === paymentFilter;
-    return matchesSearch && matchesStatus && matchesPayment;
+    const matchesEvent = eventFilter === 'all' || r.event_id === eventFilter;
+    return matchesSearch && matchesStatus && matchesPayment && matchesEvent;
   });
 
   const totalRevenue = registrations.filter((r) => r.payment_status === 'paid').reduce((s, r) => s + r.amount, 0);
@@ -210,7 +212,7 @@ const AdminDashboard = () => {
                   onChange={(e) => setSearch(e.target.value)}
                 />
               </div>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
+               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="w-full sm:w-[160px]">
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
@@ -232,6 +234,17 @@ const AdminDashboard = () => {
                   <SelectItem value="pending">Pending</SelectItem>
                   <SelectItem value="free">Free</SelectItem>
                   <SelectItem value="refunded">Refunded</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={eventFilter} onValueChange={setEventFilter}>
+                <SelectTrigger className="w-full sm:w-[200px]">
+                  <SelectValue placeholder="Event" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Events</SelectItem>
+                  {events.map((ev) => (
+                    <SelectItem key={ev.id} value={ev.id}>{ev.title}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
