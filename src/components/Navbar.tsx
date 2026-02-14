@@ -29,7 +29,7 @@ const Navbar = () => {
       <div className="container flex h-16 items-center justify-between">
         <Link to="/" className="flex items-center gap-2">
           <img src={logo} alt="GBCC Logo" className="h-10 w-10 object-contain" />
-          <span className="font-heading text-xl font-bold">EventFlow</span>
+          <span className="font-heading text-lg font-bold leading-tight">Ministers' Conference</span>
         </Link>
 
         <div className="hidden items-center gap-1 md:flex">

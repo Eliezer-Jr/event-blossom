@@ -60,82 +60,111 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <div className="w-full max-w-md space-y-6">
-        <div className="text-center">
-          <Link to="/" className="inline-flex items-center gap-2 mb-6">
-            <img src={logo} alt="GBCC Logo" className="h-12 w-12 object-contain" />
-            <span className="font-heading text-2xl font-bold">EventFlow</span>
-          </Link>
-          <h1 className="font-heading text-2xl font-bold">
-            {step === 'phone' ? 'Sign in with Phone' : 'Enter OTP'}
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            {step === 'phone'
-              ? 'Enter your phone number to receive a verification code'
-              : `We sent a code to ${normalizePhone(phone)}`}
+    <div className="min-h-screen flex">
+      {/* Left panel - branding */}
+      <div className="hidden lg:flex lg:w-1/2 relative bg-gradient-to-br from-[hsl(217,91%,25%)] via-[hsl(217,91%,35%)] to-[hsl(217,80%,20%)] items-center justify-center p-12">
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-20 left-10 h-72 w-72 rounded-full bg-white/20 blur-3xl" />
+          <div className="absolute bottom-20 right-10 h-56 w-56 rounded-full bg-white/10 blur-3xl" />
+        </div>
+        <div className="relative text-center space-y-8 max-w-md">
+          <img src={logo} alt="GBCC Logo" className="h-32 w-32 mx-auto drop-shadow-2xl" />
+          <div>
+            <h1 className="font-heading text-4xl font-bold text-white leading-tight">
+              Ministers' Conference
+            </h1>
+            <p className="text-white/70 mt-3 text-lg">
+              Ghana Baptist Convention
+            </p>
+          </div>
+          <div className="h-px w-24 mx-auto bg-white/20" />
+          <p className="text-white/50 text-sm">
+            Secure sign-in for conference administrators and event managers.
           </p>
         </div>
+      </div>
 
-        <Card>
-          <CardContent className="pt-6">
-            {step === 'phone' ? (
-              <form onSubmit={handleSendOtp} className="space-y-4">
-                <div>
-                  <Label htmlFor="phone">Phone Number</Label>
-                  <div className="relative">
-                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="phone"
-                      type="tel"
-                      required
-                      className="pl-9"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      placeholder="0241234567"
-                    />
-                  </div>
+      {/* Right panel - form */}
+      <div className="flex-1 flex items-center justify-center p-6 bg-background">
+        <div className="w-full max-w-sm space-y-8">
+          {/* Mobile logo */}
+          <div className="text-center lg:hidden">
+            <img src={logo} alt="GBCC Logo" className="h-16 w-16 mx-auto mb-4" />
+            <h2 className="font-heading text-xl font-bold">Ministers' Conference</h2>
+            <p className="text-sm text-muted-foreground">Ghana Baptist Convention</p>
+          </div>
+
+          <div>
+            <h1 className="font-heading text-2xl font-bold">
+              {step === 'phone' ? 'Welcome back' : 'Verify your number'}
+            </h1>
+            <p className="text-muted-foreground mt-1 text-sm">
+              {step === 'phone'
+                ? 'Enter your phone number to receive a verification code.'
+                : `We sent a 6-digit code to ${normalizePhone(phone)}`}
+            </p>
+          </div>
+
+          {step === 'phone' ? (
+            <form onSubmit={handleSendOtp} className="space-y-5">
+              <div className="space-y-2">
+                <Label htmlFor="phone">Phone Number</Label>
+                <div className="relative">
+                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="phone"
+                    type="tel"
+                    required
+                    className="pl-9 h-11"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="0241234567"
+                  />
                 </div>
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? (
-                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Sending...</>
-                  ) : (
-                    'Send OTP'
-                  )}
-                </Button>
-              </form>
-            ) : (
-              <form onSubmit={handleVerifyOtp} className="space-y-4">
-                <div className="flex justify-center">
-                  <InputOTP maxLength={6} value={otp} onChange={setOtp}>
-                    <InputOTPGroup>
-                      <InputOTPSlot index={0} />
-                      <InputOTPSlot index={1} />
-                      <InputOTPSlot index={2} />
-                      <InputOTPSlot index={3} />
-                      <InputOTPSlot index={4} />
-                      <InputOTPSlot index={5} />
-                    </InputOTPGroup>
-                  </InputOTP>
-                </div>
-                <Button type="submit" className="w-full" disabled={loading || otp.length < 6}>
-                  {loading ? (
-                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Verifying...</>
-                  ) : (
-                    'Verify & Sign In'
-                  )}
-                </Button>
-                <button
-                  type="button"
-                  className="w-full text-sm text-muted-foreground hover:text-foreground"
-                  onClick={() => { setStep('phone'); setOtp(''); }}
-                >
-                  Change phone number
-                </button>
-              </form>
-            )}
-          </CardContent>
-        </Card>
+              </div>
+              <Button type="submit" className="w-full h-11" disabled={loading}>
+                {loading ? (
+                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Sending...</>
+                ) : (
+                  'Send OTP'
+                )}
+              </Button>
+            </form>
+          ) : (
+            <form onSubmit={handleVerifyOtp} className="space-y-5">
+              <div className="flex justify-center">
+                <InputOTP maxLength={6} value={otp} onChange={setOtp}>
+                  <InputOTPGroup>
+                    <InputOTPSlot index={0} />
+                    <InputOTPSlot index={1} />
+                    <InputOTPSlot index={2} />
+                    <InputOTPSlot index={3} />
+                    <InputOTPSlot index={4} />
+                    <InputOTPSlot index={5} />
+                  </InputOTPGroup>
+                </InputOTP>
+              </div>
+              <Button type="submit" className="w-full h-11" disabled={loading || otp.length < 6}>
+                {loading ? (
+                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Verifying...</>
+                ) : (
+                  'Verify & Sign In'
+                )}
+              </Button>
+              <button
+                type="button"
+                className="w-full text-sm text-muted-foreground hover:text-foreground transition-colors"
+                onClick={() => { setStep('phone'); setOtp(''); }}
+              >
+                ← Change phone number
+              </button>
+            </form>
+          )}
+
+          <p className="text-center text-xs text-muted-foreground">
+            <Link to="/" className="hover:text-foreground transition-colors">← Back to events</Link>
+          </p>
+        </div>
       </div>
     </div>
   );
