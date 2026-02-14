@@ -6,8 +6,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
-import { Calendar, Loader2, Phone } from 'lucide-react';
+import { Loader2, Phone } from 'lucide-react';
 import { toast } from 'sonner';
+import logo from '@/assets/logo-gbcc.png';
 
 const normalizePhone = (phone: string): string => {
   let cleaned = phone.replace(/[\s\-()]/g, '');
@@ -63,9 +64,7 @@ const Auth = () => {
       <div className="w-full max-w-md space-y-6">
         <div className="text-center">
           <Link to="/" className="inline-flex items-center gap-2 mb-6">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
-              <Calendar className="h-6 w-6 text-primary-foreground" />
-            </div>
+            <img src={logo} alt="GBCC Logo" className="h-12 w-12 object-contain" />
             <span className="font-heading text-2xl font-bold">EventFlow</span>
           </Link>
           <h1 className="font-heading text-2xl font-bold">
