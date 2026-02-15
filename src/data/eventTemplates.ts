@@ -6,6 +6,7 @@ interface TicketTypeInput {
   quantity: string;
   description: string;
   endsAt: string;
+  startsAt: string;
 }
 
 export interface EventTemplate {
@@ -30,8 +31,8 @@ export const eventTemplates: EventTemplate[] = [
       capacity: '500',
     },
     tickets: [
-      { name: 'Early Bird (Before 1st April)', price: '1000', quantity: '500', description: 'Register before 1st April 2026', endsAt: '2026-03-31' },
-      { name: 'Standard (From 1st April)', price: '1100', quantity: '500', description: 'Registration from 1st April 2026 onwards', endsAt: '' },
+      { name: 'Early Bird (Before 1st April)', price: '1000', quantity: '500', description: 'Register before 1st April 2026', endsAt: '2026-03-31', startsAt: '' },
+      { name: 'Standard (From 1st April)', price: '1100', quantity: '500', description: 'Registration from 1st April 2026 onwards', endsAt: '', startsAt: '2026-04-01' },
     ],
     customFields: [
       {

@@ -27,6 +27,7 @@ export const useEvents = () => {
         organizer: e.organizer || '',
         category: e.category,
         customFields: (e.custom_fields as any) || [],
+        archived: (e as any).archived || false,
         ticketTypes: (e.ticket_types || []).map((t: any): TicketType => ({
           id: t.id,
           name: t.name,
@@ -35,6 +36,7 @@ export const useEvents = () => {
           sold: t.sold,
           description: t.description || undefined,
           endsAt: t.ends_at || undefined,
+          startsAt: t.starts_at || undefined,
         })),
       }));
     },
@@ -69,6 +71,7 @@ export const useEvent = (id: string | undefined) => {
         organizer: e.organizer || '',
         category: e.category,
         customFields: (e.custom_fields as any) || [],
+        archived: (e as any).archived || false,
         ticketTypes: (e.ticket_types || []).map((t: any): TicketType => ({
           id: t.id,
           name: t.name,
@@ -77,6 +80,7 @@ export const useEvent = (id: string | undefined) => {
           sold: t.sold,
           description: t.description || undefined,
           endsAt: t.ends_at || undefined,
+          startsAt: t.starts_at || undefined,
         })),
       };
     },

@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       events: {
         Row: {
+          archived: boolean
           capacity: number
           category: string
           created_at: string
@@ -34,6 +35,7 @@ export type Database = {
           venue: string
         }
         Insert: {
+          archived?: boolean
           capacity?: number
           category?: string
           created_at?: string
@@ -52,6 +54,7 @@ export type Database = {
           venue: string
         }
         Update: {
+          archived?: boolean
           capacity?: number
           category?: string
           created_at?: string
@@ -214,6 +217,7 @@ export type Database = {
           price: number
           quantity: number
           sold: number
+          starts_at: string | null
         }
         Insert: {
           created_at?: string
@@ -225,6 +229,7 @@ export type Database = {
           price?: number
           quantity?: number
           sold?: number
+          starts_at?: string | null
         }
         Update: {
           created_at?: string
@@ -236,6 +241,7 @@ export type Database = {
           price?: number
           quantity?: number
           sold?: number
+          starts_at?: string | null
         }
         Relationships: [
           {

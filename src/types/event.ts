@@ -15,6 +15,7 @@ export interface Event {
   organizer: string;
   category: string;
   customFields?: CustomField[];
+  archived?: boolean;
 }
 
 export interface TicketType {
@@ -25,6 +26,7 @@ export interface TicketType {
   sold: number;
   description?: string;
   endsAt?: string;
+  startsAt?: string;
 }
 
 export interface Registration {
