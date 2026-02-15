@@ -88,7 +88,7 @@ Deno.serve(async (req) => {
         messages: [
           {
             recipient: localPhone,
-            message: `Your EventFlow verification code is: ${code}. It expires in 5 minutes.`,
+            message: `Ministers' Conference verification code is: ${code}. It expires in 5 minutes.`,
             ref: `otp-${Date.now()}`,
           },
         ],
