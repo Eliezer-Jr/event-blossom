@@ -37,8 +37,32 @@ const paymentColors: Record<string, string> = {
   failed: 'bg-destructive/10 text-destructive border-destructive/20',
 };
 
+const getComputedStatus = (event: { date: string; time: string; status: string }) => {
+  const now = new Date();
+  const eventDate = new Date(event.date);
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const evDay = new Date(eventDate.getFullYear(), eventDate.getMonth(), eventDate.getDate());
+
+  if (event.status === 'sold-out') return 'sold-out';
+  if (evDay > today) return 'upcoming';
+  if (evDay.getTime() === today.getTime()) return 'ongoing';
+  return 'closed';
+};
+
+const getDuration = (dateStr: string) => {
+  const now = new Date();
+  const eventDate = new Date(dateStr);
+  const diffMs = eventDate.getTime() - now.getTime();
+  const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+  if (diffDays > 0) return `in ${diffDays} day${diffDays !== 1 ? 's' : ''}`;
+  if (diffDays === 0) return 'Today';
+  const past = Math.abs(diffDays);
+  return `${past} day${past !== 1 ? 's' : ''} ago`;
+};
+
 const EventsOverview = () => {
-  const { data: events = [], isLoading } = useEvents();
+  const { data: allEvents = [], isLoading } = useEvents();
+  const events = allEvents.filter((e) => !e.archived);
   const { data: registrations = [] } = useRegistrations();
   const queryClient = useQueryClient();
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
@@ -178,7 +202,6 @@ const EventsOverview = () => {
                     <TableHead>Venue</TableHead>
                     <TableHead>Category</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Capacity</TableHead>
                     <TableHead className="text-right">Registered</TableHead>
                     <TableHead className="text-right">Checked In</TableHead>
                     <TableHead className="text-right">Pending</TableHead>
@@ -192,7 +215,7 @@ const EventsOverview = () => {
                 <TableBody>
                   {events.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={14} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={13} className="text-center py-8 text-muted-foreground">
                         No events found
                       </TableCell>
                     </TableRow>
@@ -214,6 +237,7 @@ const EventsOverview = () => {
                               {event.date}
                             </div>
                             <p className="text-xs text-muted-foreground">{event.time}</p>
+                            <p className="text-xs font-medium text-primary">{getDuration(event.date)}</p>
                           </TableCell>
                           <TableCell className="text-sm">
                             <div className="flex items-center gap-1 text-muted-foreground">
@@ -225,9 +249,14 @@ const EventsOverview = () => {
                             <Badge variant="secondary" className="text-xs">{event.category}</Badge>
                           </TableCell>
                           <TableCell>
-                            <Badge variant="outline" className={statusBadge[event.status] || ''}>{event.status}</Badge>
+                            {(() => {
+                              const computed = getComputedStatus(event);
+                              const badgeClass = computed === 'closed' 
+                                ? 'bg-muted text-muted-foreground' 
+                                : statusBadge[computed] || '';
+                              return <Badge variant="outline" className={badgeClass}>{computed}</Badge>;
+                            })()}
                           </TableCell>
-                          <TableCell className="text-right">{event.capacity}</TableCell>
                           <TableCell className="text-right font-medium">{event.registeredCount}</TableCell>
                           <TableCell className="text-right">{checkedIn}</TableCell>
                           <TableCell className="text-right">
