@@ -14,7 +14,19 @@ const statusColors: Record<string, string> = {
   upcoming: 'bg-success text-success-foreground',
   ongoing: 'bg-primary text-primary-foreground',
   past: 'bg-muted text-muted-foreground',
+  closed: 'bg-destructive/80 text-destructive-foreground',
   'sold-out': 'bg-destructive text-destructive-foreground',
+};
+
+const getComputedStatus = (event: Event) => {
+  const now = new Date();
+  const eventDate = new Date(event.date);
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const evDay = new Date(eventDate.getFullYear(), eventDate.getMonth(), eventDate.getDate());
+  if (event.status === 'sold-out') return 'sold-out';
+  if (evDay > today) return 'upcoming';
+  if (evDay.getTime() === today.getTime()) return 'ongoing';
+  return 'closed';
 };
 
 const EventCard = ({ event, index }: EventCardProps) => {
@@ -37,9 +49,11 @@ const EventCard = ({ event, index }: EventCardProps) => {
             ) : (
               <CalendarDays className="h-16 w-16 text-primary/30" />
             )}
-            <Badge className={`absolute top-3 right-3 ${statusColors[event.status]}`}>
-              {event.status === 'sold-out' ? 'Sold Out' : event.status.charAt(0).toUpperCase() + event.status.slice(1)}
-            </Badge>
+            {(() => {
+              const computed = getComputedStatus(event);
+              const label = computed === 'sold-out' ? 'Sold Out' : computed === 'closed' ? 'Closed' : computed.charAt(0).toUpperCase() + computed.slice(1);
+              return <Badge className={`absolute top-3 right-3 ${statusColors[computed]}`}>{label}</Badge>;
+            })()}
           </div>
           <CardContent className="p-5">
             <p className="text-xs font-medium text-primary mb-1 uppercase tracking-wider">{event.category}</p>

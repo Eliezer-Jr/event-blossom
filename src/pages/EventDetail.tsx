@@ -70,6 +70,13 @@ const EventDetail = () => {
   const spotsLeft = event.capacity - event.registeredCount;
   const selectedTicketType = event.ticketTypes.find((t) => t.id === selectedTicket);
 
+  // Compute if event is closed (past date)
+  const nowDate = new Date();
+  const eventDate = new Date(event.date);
+  const today = new Date(nowDate.getFullYear(), nowDate.getMonth(), nowDate.getDate());
+  const evDay = new Date(eventDate.getFullYear(), eventDate.getMonth(), eventDate.getDate());
+  const isClosed = evDay < today;
+
   // Compute effective price: check if any custom field has priceOverrides that apply
   const getEffectivePrice = (): number => {
     if (!selectedTicketType) return 0;
@@ -303,21 +310,25 @@ const EventDetail = () => {
                   <Card>
                     <CardContent className="p-6 text-center space-y-4">
                       <Ticket className="h-10 w-10 text-primary mx-auto" />
-                      <h3 className="font-heading text-xl font-bold">Ready to attend?</h3>
+                      <h3 className="font-heading text-xl font-bold">
+                        {isClosed ? 'Event Closed' : 'Ready to attend?'}
+                      </h3>
                       <p className="text-sm text-muted-foreground">
-                        {isUnlimited
-                          ? `${event.registeredCount} registered`
-                          : spotsLeft > 0
-                            ? `Secure your spot — ${spotsLeft} remaining`
-                            : 'This event is fully booked'}
+                        {isClosed
+                          ? 'Registration for this event has ended.'
+                          : isUnlimited
+                            ? `${event.registeredCount} registered`
+                            : spotsLeft > 0
+                              ? `Secure your spot — ${spotsLeft} remaining`
+                              : 'This event is fully booked'}
                       </p>
                       <Button
                         className="w-full"
                         size="lg"
-                        disabled={!isUnlimited && spotsLeft === 0}
+                        disabled={isClosed || (!isUnlimited && spotsLeft === 0)}
                         onClick={() => setShowForm(true)}
                       >
-                        {isUnlimited || spotsLeft > 0 ? 'Register Now' : 'Sold Out'}
+                        {isClosed ? 'Closed' : isUnlimited || spotsLeft > 0 ? 'Register Now' : 'Sold Out'}
                       </Button>
                     </CardContent>
                   </Card>
