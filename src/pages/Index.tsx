@@ -13,9 +13,10 @@ const Index = () => {
 
   const filtered = events.filter(
     (e) =>
-      e.title.toLowerCase().includes(search.toLowerCase()) ||
+      !e.archived &&
+      (e.title.toLowerCase().includes(search.toLowerCase()) ||
       e.category.toLowerCase().includes(search.toLowerCase()) ||
-      e.venue.toLowerCase().includes(search.toLowerCase())
+      e.venue.toLowerCase().includes(search.toLowerCase()))
   );
 
   return (

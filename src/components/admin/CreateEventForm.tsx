@@ -20,9 +20,10 @@ interface TicketTypeInput {
   quantity: string;
   description: string;
   endsAt: string;
+  startsAt: string;
 }
 
-const emptyTicket = (): TicketTypeInput => ({ name: '', price: '0', quantity: '', description: '', endsAt: '' });
+const emptyTicket = (): TicketTypeInput => ({ name: '', price: '0', quantity: '', description: '', endsAt: '', startsAt: '' });
 
 const CreateEventForm = () => {
   const { user } = useAuth();
@@ -104,6 +105,7 @@ const CreateEventForm = () => {
         quantity: t.quantity ? parseInt(t.quantity) : 999999,
         description: t.description || null,
         ends_at: t.endsAt ? new Date(t.endsAt).toISOString() : null,
+        starts_at: t.startsAt ? new Date(t.startsAt).toISOString() : null,
       }));
 
       const { error: ticketError } = await supabase.from('ticket_types').insert(ticketInserts);
@@ -241,7 +243,7 @@ const CreateEventForm = () => {
               </Button>
             </div>
             {tickets.map((ticket, i) => (
-              <div key={i} className="grid gap-3 sm:grid-cols-5 p-4 rounded-lg border bg-secondary/30">
+              <div key={i} className="grid gap-3 sm:grid-cols-6 p-4 rounded-lg border bg-secondary/30">
                 <div>
                   <Label>Name</Label>
                   <Input placeholder="e.g. Regular" value={ticket.name} onChange={(e) => updateTicket(i, 'name', e.target.value)} />
@@ -251,11 +253,15 @@ const CreateEventForm = () => {
                   <Input type="number" min="0" value={ticket.price} onChange={(e) => updateTicket(i, 'price', e.target.value)} />
                 </div>
                  <div>
-                  <Label>Quantity <span className="text-muted-foreground text-xs">(optional)</span></Label>
+                  <Label>Quantity <span className="text-muted-foreground text-xs">(opt)</span></Label>
                   <Input type="number" min="1" placeholder="Unlimited" value={ticket.quantity} onChange={(e) => updateTicket(i, 'quantity', e.target.value)} />
                 </div>
                 <div>
-                  <Label>Ends On <span className="text-muted-foreground text-xs">(optional)</span></Label>
+                  <Label>Visible From <span className="text-muted-foreground text-xs">(opt)</span></Label>
+                  <Input type="date" value={ticket.startsAt} onChange={(e) => updateTicket(i, 'startsAt', e.target.value)} />
+                </div>
+                <div>
+                  <Label>Ends On <span className="text-muted-foreground text-xs">(opt)</span></Label>
                   <Input type="date" value={ticket.endsAt} onChange={(e) => updateTicket(i, 'endsAt', e.target.value)} />
                 </div>
                 <div className="flex items-end">

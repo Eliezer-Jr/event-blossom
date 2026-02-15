@@ -250,7 +250,10 @@ const EventDetail = () => {
               {event.ticketTypes.map((ticket) => {
                 const ticketUnlimited = ticket.quantity >= 999999;
                 const available = ticket.quantity - ticket.sold;
-                const isExpired = ticket.endsAt ? new Date(ticket.endsAt) < new Date() : false;
+                const now = new Date();
+                const isExpired = ticket.endsAt ? new Date(ticket.endsAt) < now : false;
+                const notYetVisible = ticket.startsAt ? new Date(ticket.startsAt) > now : false;
+                if (notYetVisible) return null; // Hide tickets that haven't started yet
                 const isDisabled = isExpired || (!ticketUnlimited && available === 0);
                 return (
                   <div
@@ -395,7 +398,13 @@ const EventDetail = () => {
                               <SelectValue placeholder="Select ticket" />
                             </SelectTrigger>
                             <SelectContent>
-                              {event.ticketTypes.filter((t) => t.quantity - t.sold > 0).map((t) => (
+                              {event.ticketTypes.filter((t) => {
+                                const now = new Date();
+                                const isExpired = t.endsAt ? new Date(t.endsAt) < now : false;
+                                const notYetVisible = t.startsAt ? new Date(t.startsAt) > now : false;
+                                const available = t.quantity - t.sold;
+                                return !isExpired && !notYetVisible && available > 0;
+                              }).map((t) => (
                                 <SelectItem key={t.id} value={t.id}>
                                   {t.name} — {t.price === 0 ? 'Free' : `GH₵${t.price.toLocaleString()}`}
                                 </SelectItem>
